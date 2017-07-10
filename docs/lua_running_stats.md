@@ -1,11 +1,10 @@
 # Lua Running Stats Module
 
 ## Overview
-Calculates the running count, mean, variance, and standard deviation.
+Calculates the running count, mean, variance, and standard deviation. The module
+is globally registered and returned by the require function.
 
-## Module
-
-### Example Usage
+## Example Usage
 ```lua
 require "streaming_algorithms.running_stats"
 local stat = streaming_algorithms.running_stats.new()
@@ -16,7 +15,7 @@ local cnt = stat:count()
 -- cnt == 100
 ```
 
-The module is globally registered and returned by the require function.
+## Module
 
 ### Functions
 
@@ -34,7 +33,7 @@ Creates a new running_stats userdata object.
 *Return*
 - running_stats userdata object
 
-## Methods
+### Methods
 
 #### add
 ```lua

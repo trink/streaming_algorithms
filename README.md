@@ -6,11 +6,11 @@
 Calculates the mean, variance, and standard deviation
 https://www.johndcook.com/blog/standard_deviation/
 
-### Piece_wise Parabolic Prediction (P2)
+### Piecewise Parabolic Prediction (P2)
 The [p2](http://www.cs.wustl.edu/~jain/papers/ftp/psqr.pdf) Algorithm for
 dynamic calculation of quantiles and histograms without storing observation.
 
-[API Documentation](http://trink.github.io/streaming_algorithms)
+[Full Documentation](http://trink.github.io/streaming_algorithms)
 
 ## Installation
 
@@ -22,6 +22,7 @@ dynamic calculation of quantiles and histograms without storing observation.
 #### Optional (used for documentation)
 * Graphviz (2.28.0) - http://graphviz.org/Download.php
 * Doxygen (1.8.11+)- http://www.stack.nl/~dimitri/doxygen/download.html#latestsrc
+* gitbook (2.3) - https://www.gitbook.com/
 
 ### CMake Build Instructions
 

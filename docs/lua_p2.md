@@ -1,11 +1,10 @@
-# Lua P2 Module
+# Lua Piecewise Parabolic Prediction (P2) Module
 
 ## Overview
 Dynamic calculations of quatiles and histograms without storing observations.
+The module is globally registered and returned by the require function.
 
-## Module
-
-### Example Usage
+## Example Usage
 ```lua
 require "streaming_algorithms.p2"
 local q = streaming_algorithms.p2.quantile(0.5)
@@ -16,7 +15,7 @@ local cnt = q:count(2)
 -- cnt == 50
 ```
 
-The module is globally registered and returned by the require function.
+## Module
 
 ### Functions
 
@@ -48,7 +47,7 @@ Creates a new histogram userdata object.
 *Return*
 - histogram userdata object
 
-## Quantile Methods
+### Quantile Methods
 
 #### add
 ```lua
@@ -123,7 +122,7 @@ Restores the quantile to the previously serialized state.
 - none or throws an error
 
 
-## Histogram Methods
+### Histogram Methods
 
 #### add
 ```lua

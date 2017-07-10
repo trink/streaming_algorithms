@@ -12,8 +12,8 @@ if(DOXYGEN_FOUND)
         file(WRITE ${DOXYCONF_OUT} "
 PROJECT_NAME            = \"${PROJECT_NAME}\"
 PROJECT_BRIEF           = \"${CPACK_PACKAGE_DESCRIPTION_SUMMARY}\"
-OUTPUT_DIRECTORY        =  \"${CMAKE_SOURCE_DIR}\"
-HTML_OUTPUT             = gh-pages
+OUTPUT_DIRECTORY        = \"${CMAKE_SOURCE_DIR}/gh-pages\"
+HTML_OUTPUT             = doxygen
 GENERATE_LATEX          = NO
 GENERATE_TODOLIST       = YES
 FULL_PATH_NAMES         = YES
@@ -32,7 +32,9 @@ STRIP_CODE_COMMENTS     = NO
 PROJECT_NUMBER          = ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
     endif()
 
-    add_custom_target(docs ${DOXYGEN_EXECUTABLE} ${DOXYCONF_OUT} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    add_custom_target(docs ${DOXYGEN_EXECUTABLE} ${DOXYCONF_OUT} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMAND lua gen_gh_pages.lua "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}"
+    "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 else()
     message("The optional documentation tools were not found; the doc target has not been created")
 endif()
