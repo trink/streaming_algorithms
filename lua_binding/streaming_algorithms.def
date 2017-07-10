@@ -1,0 +1,3 @@
+EXPORTS
+luaopen_streaming_algorithms_p2
+luaopen_streaming_algorithms_running_stats
