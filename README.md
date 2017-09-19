@@ -17,7 +17,7 @@ dynamic calculation of quantiles and histograms without storing observation.
 ### Prerequisites
 * C compiler (GCC 4.7+, Visual Studio 2013)
 * CMake (3.3+) - http://cmake.org/cmake/resources/software.html
-* Git http://git_scm.com/download
+* Git http://git-scm.com/download
 
 #### Optional (used for documentation)
 * Graphviz (2.28.0) - http://graphviz.org/Download.php
