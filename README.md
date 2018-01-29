@@ -2,12 +2,16 @@
 
 ## Overview
 
+### Count-min Sketch
+The [Count-min sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch)
+calculates the frequency of an item in a stream.
+
 ### Running Stats
 Calculates the mean, variance, and standard deviation
 https://www.johndcook.com/blog/standard_deviation/
 
 ### Piecewise Parabolic Prediction (P2)
-The [p2](http://www.cs.wustl.edu/~jain/papers/ftp/psqr.pdf) Algorithm for
+The [p2](http://www.cs.wustl.edu/~jain/papers/ftp/psqr.pdf) algorithm for
 dynamic calculation of quantiles and histograms without storing observation.
 
 [Full Documentation](http://trink.github.io/streaming_algorithms)
@@ -16,7 +20,7 @@ dynamic calculation of quantiles and histograms without storing observation.
 
 ### Prerequisites
 * C compiler (GCC 4.7+, Visual Studio 2013)
-* CMake (3.3+) - http://cmake.org/cmake/resources/software.html
+* CMake (3.6+) - http://cmake.org/cmake/resources/software.html
 * Git http://git-scm.com/download
 
 #### Optional (used for documentation)

@@ -4,8 +4,10 @@
 
 set(SA_SRCS
 common.c
+cm_sketch.c
 p2.c
 running_stats.c
+xxhash.c
 )
 
 add_library(${PROJECT_NAME} STATIC ${SA_SRCS})

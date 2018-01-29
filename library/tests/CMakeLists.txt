@@ -9,3 +9,7 @@ add_test(NAME test_p2 COMMAND test_p2)
 add_executable(test_running_stats test_running_stats.c ../src/common.c)
 target_link_libraries(test_running_stats streaming_algorithms)
 add_test(NAME test_running_stats COMMAND test_running_stats)
+
+add_executable(test_cm_sketch test_cm_sketch.c ../src/common.c)
+target_link_libraries(test_cm_sketch streaming_algorithms)
+add_test(NAME test_cm_sketch COMMAND test_cm_sketch)
