@@ -123,3 +123,70 @@ end
 
 verify_results(q)
 verify_results(h)
+
+
+
+
+
+-- ##########################
+local cm_sketch = require "streaming_algorithms.cm_sketch"
+
+local cms_errors = {
+    {function() local s = cm_sketch.new() end, "test.lua:135: bad argument #0 to 'new' (incorrect number of arguments)"},
+    {function() local s = cm_sketch.new(0.1, "string") end, "test.lua:136: bad argument #2 to 'new' (number expected, got string)"},
+    {function() local s = cm_sketch.new(-1, 0.1) end, "test.lua:137: bad argument #1 to 'new' (0 < epsilon < 1)"},
+    {function() local s = cm_sketch.new(0.1, -1) end, "test.lua:138: bad argument #2 to 'new' (0 < delta < 1)"},
+    {function() local s = cm_sketch.new("string", -1) end, "test.lua:139: bad argument #1 to 'new' (number expected, got string)"},
+}
+
+for i, v in ipairs(cms_errors) do
+    local ok, err = pcall(v[1])
+    if ok or err ~= v[2]then
+        error(tostring(err))
+    end
+end
+
+
+local cms_method_errors = {
+    {function(ud) local rv = ud:update() end, "test.lua:151: bad argument #-1 to 'update' (incorrect number of arguments)"},
+    {function(ud) local rv = ud:update(true) end, "test.lua:152: bad argument #1 to 'update' (must be a string or number)"},
+    {function(ud) local rv = ud:update("a", "a") end, "test.lua:153: bad argument #2 to 'update' (number expected, got string)"},
+    {function(ud) local rv = ud:item_count(6) end, "test.lua:154: bad argument #-1 to 'item_count' (incorrect number of arguments)"},
+    {function(ud) local rv = ud:unique_count(6) end, "test.lua:155: bad argument #-1 to 'unique_count' (incorrect number of arguments)"},
+    {function(ud) local rv = ud:clear(6) end, "test.lua:156: bad argument #-1 to 'clear' (incorrect number of arguments)"},
+    {function(ud) ud:fromstring(nil) end, "test.lua:157: bad argument #1 to 'fromstring' (string expected, got nil)"},
+    {function(ud) ud:fromstring("foo") end, "test.lua:158: invalid serialization"},
+    {function(ud) ud:point_query() end, "test.lua:159: bad argument #-1 to 'point_query' (incorrect number of arguments)"},
+    {function(ud) ud:point_query(true) end, "test.lua:160: bad argument #1 to 'point_query' (must be a string or number)"},
+}
+
+for i, v in ipairs(cms_method_errors) do
+    local cms = cm_sketch.new(0.1, 0.1)
+    local ok, err = pcall(v[1], cms)
+    if ok or err ~= v[2]then
+        error(string.format("test: %d error: %s", i, tostring(err)))
+    end
+end
+
+local cms = cm_sketch.new(0.1, 0.1)
+assert(cms:item_count() == 0)
+assert(cms:unique_count() == 0)
+assert(cms:point_query("a") == 0)
+assert(cms:update("a", -10) == 0)
+assert(cms:item_count() == 0)
+assert(cms:unique_count() == 0)
+cms:update("c", 6)
+cms:update("a")
+cms:update("b", 2)
+cms:update("c", -3)
+cms:update(2)
+assert(cms:item_count() == 7)
+assert(cms:unique_count() == 4)
+assert(cms:point_query("a") == 1)
+assert(cms:point_query("b") == 2)
+assert(cms:point_query("c") == 3)
+assert(cms:point_query(2) == 1)
+assert(cms:update("c", -4) == 0)
+assert(cms:point_query("c") == 0)
+assert(cms:item_count() == 4)
+assert(cms:unique_count() == 3)
