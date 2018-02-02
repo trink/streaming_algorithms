@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <title>Running Stats · GitBook</title>
+        <title>Count-min Sketch · GitBook</title>
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="description" content="">
         <meta name="generator" content="GitBook 3.2.2">
@@ -61,10 +61,8 @@
     <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
 
     
-    <link rel="next" href="lua_p2.html" />
+    <link rel="next" href="lua_running_stats.html" />
     
-    
-    <link rel="prev" href="lua_cm_sketch.html" />
     
 
     </head>
@@ -126,7 +124,7 @@
         
         
     
-        <li class="chapter " data-level="2.1" data-path="lua_cm_sketch.html">
+        <li class="chapter active" data-level="2.1" data-path="lua_cm_sketch.html">
             
                 <a href="lua_cm_sketch.html">
             
@@ -139,7 +137,7 @@
             
         </li>
     
-        <li class="chapter active" data-level="2.2" data-path="lua_running_stats.html">
+        <li class="chapter " data-level="2.2" data-path="lua_running_stats.html">
             
                 <a href="lua_running_stats.html">
             
@@ -195,7 +193,7 @@
     <!-- Title -->
     <h1>
         <i class="fa fa-circle-o-notch fa-spin"></i>
-        <a href="." >Running Stats</a>
+        <a href="." >Count-min Sketch</a>
     </h1>
 </div>
 
@@ -210,63 +208,66 @@
     
                                 <section class="normal markdown-section">
                                 
-                                <h1 id="Lua_Running_Stats_Module">Lua Running Stats Module</h1>
+                                <h1 id="Lua_Count-min_Sketch_Module">Lua Count-min Sketch Module</h1>
 <h2 id="Overview">1. Overview</h2>
-<p>Calculates the running count, mean, variance, and standard deviation. The module
-is globally registered and returned by the require function.</p>
+<p>Calculates the frequency of an item in a stream. The module is globally
+registered and returned by the require function.</p>
 <h2 id="Example_Usage">2. Example Usage</h2>
-<pre><code class="lang-lua"><span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.running_stats&quot;</span>
-<span class="hljs-keyword">local</span> stat = streaming_algorithms.running_stats.new()
+<pre><code class="lang-lua"><span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.cm_sketch&quot;</span>
+<span class="hljs-keyword">local</span> cms = streaming_algorithms.cm_sketch.new(<span class="hljs-number">0.01</span>, <span class="hljs-number">0.01</span>)
 <span class="hljs-keyword">for</span> i = <span class="hljs-number">1</span>, <span class="hljs-number">100</span> <span class="hljs-keyword">do</span>
-    stat:add(i)
+    cms:update(i)
 <span class="hljs-keyword">end</span>
-<span class="hljs-keyword">local</span> cnt = stat:count()
-<span class="hljs-comment">-- cnt == 100</span>
+<span class="hljs-keyword">local</span> cnt = cms:point_query(<span class="hljs-number">1</span>)
+<span class="hljs-comment">-- cnt == 1</span>
 </code></pre>
 <h2 id="Module">3. Module</h2>
 <h3 id="Functions">3.1. Functions</h3>
 <h4 id="new">3.1.1. new</h4>
-<pre><code class="lang-lua"><span class="hljs-keyword">local</span> rs = <span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.running_stats&quot;</span>
-<span class="hljs-keyword">local</span> stat = rs.new()
+<pre><code class="lang-lua"><span class="hljs-keyword">local</span> cm_sketch = <span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.cm_sketch&quot;</span>
+<span class="hljs-keyword">local</span> cms = cm_sketch.new(<span class="hljs-number">0.01</span>, <span class="hljs-number">0.01</span>)
 </code></pre>
-<p>Creates a new running_stats userdata object.</p>
+<p>Creates a new cm_sketch userdata object.</p>
 <p><em>Arguments</em></p>
 <ul>
-<li>none</li>
+<li>epsilon (number) approximation factor</li>
+<li>delta (number) probability of failure</li>
 </ul>
 <p><em>Return</em></p>
 <ul>
-<li>running_stats userdata object</li>
+<li>cm_sketch userdata object</li>
 </ul>
 <h3 id="Methods">3.2. Methods</h3>
-<h4 id="add">3.2.1. add</h4>
-<pre><code class="lang-lua">stat:add(<span class="hljs-number">1.3243</span>)
+<h4 id="update">3.2.1. update</h4>
+<pre><code class="lang-lua"><span class="hljs-keyword">local</span> estimate = cms:update(<span class="hljs-string">&quot;foo&quot;</span>)
 </code></pre>
-<p>Add the value to the running stats.</p>
+<p>Update the count for the specified item in the sketch.</p>
 <p><em>Arguments</em></p>
 <ul>
-<li>value (number)</li>
+<li>key (string/number) item identifier</li>
+<li>n (number/nil/none) number of items (default 1), a negative value removes
+items</li>
 </ul>
 <p><em>Return</em></p>
 <ul>
-<li>none</li>
+<li>estimate (integer) estimated frequency count</li>
 </ul>
-<h4 id="avg">3.2.2. avg</h4>
-<pre><code class="lang-lua"><span class="hljs-keyword">local</span> avg = stat:avg()
+<h4 id="point_query">3.2.2. point_query</h4>
+<pre><code class="lang-lua"><span class="hljs-keyword">local</span> estimate = cms:point_query(<span class="hljs-string">&quot;foo&quot;</span>)
 </code></pre>
-<p>Returns the current average.</p>
+<p>Retruns the frequency for the specified item in the sketch.</p>
 <p><em>Arguments</em></p>
 <ul>
-<li>none</li>
+<li>key (string/number) item identifier</li>
 </ul>
 <p><em>Return</em></p>
 <ul>
-<li>avg (number)</li>
+<li>estimate (integer) estimated frequency count</li>
 </ul>
 <h4 id="clear">3.2.3. clear</h4>
-<pre><code class="lang-lua">stat:clear()
+<pre><code class="lang-lua">cms:clear()
 </code></pre>
-<p>Resets the stats to zero.</p>
+<p>Resets the count-min sketch.</p>
 <p><em>Arguments</em></p>
 <ul>
 <li>none</li>
@@ -275,10 +276,10 @@ is globally registered and returned by the require function.</p>
 <ul>
 <li>none</li>
 </ul>
-<h4 id="count">3.2.4. count</h4>
-<pre><code class="lang-lua"><span class="hljs-keyword">local</span> count = stat:count()
+<h4 id="item_count">3.2.4. item_count</h4>
+<pre><code class="lang-lua"><span class="hljs-keyword">local</span> count = cms:item_count()
 </code></pre>
-<p>Returns the total number of values.</p>
+<p>Returns the total number items in the sketch.</p>
 <p><em>Arguments</em></p>
 <ul>
 <li>none</li>
@@ -287,10 +288,23 @@ is globally registered and returned by the require function.</p>
 <ul>
 <li>count (number)</li>
 </ul>
-<h4 id="fromstring">3.2.5. fromstring</h4>
-<pre><code class="lang-lua">stat:fromstring(<span class="hljs-built_in">tostring</span>(stat1))
+<h4 id="unique_count">3.2.5. unique_count</h4>
+<pre><code class="lang-lua"><span class="hljs-keyword">local</span> count = cms:unique_count()
 </code></pre>
-<p>Restores the stats to the previously serialized state.</p>
+<p>Returns the total number unique items in the sketch.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>none</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>count (number)</li>
+</ul>
+<h4 id="fromstring">3.2.6. fromstring</h4>
+<pre><code class="lang-lua">cms1:fromstring(<span class="hljs-built_in">tostring</span>(cms))
+</code></pre>
+<p>Restores the sketch to the previously serialized state (must have a compatible
+epsilon and delta).</p>
 <p><em>Arguments</em></p>
 <ul>
 <li>serialization (string) tostring output</li>
@@ -299,31 +313,7 @@ is globally registered and returned by the require function.</p>
 <ul>
 <li>none or throws an error</li>
 </ul>
-<h4 id="sd">3.2.6. sd</h4>
-<pre><code class="lang-lua"><span class="hljs-keyword">local</span> sd = stat:sd()
-</code></pre>
-<p>Returns the current standard deviation.</p>
-<p><em>Arguments</em></p>
-<ul>
-<li>none</li>
-</ul>
-<p><em>Return</em></p>
-<ul>
-<li>sd (number)</li>
-</ul>
-<h4 id="variance">3.2.7. variance</h4>
-<pre><code class="lang-lua"><span class="hljs-keyword">local</span> variance = stat:variance()
-</code></pre>
-<p>Returns the current variance.</p>
-<p><em>Arguments</em></p>
-<ul>
-<li>none</li>
-</ul>
-<p><em>Return</em></p>
-<ul>
-<li>variance (number)</li>
-</ul>
-<div id="anchors-navbar"><i class="fa fa-anchor"></i><ul><p><a href="#Lua_Running_Stats_Module">Lua Running Stats Module</a></p><li><a href="#Overview">1. Overview</a></li><li><a href="#Example_Usage">2. Example Usage</a></li><li><a href="#Module">3. Module</a></li><ul><li><a href="#Functions">3.1. Functions</a></li><ul><li><a href="#new">3.1.1. new</a></li></ul><li><a href="#Methods">3.2. Methods</a></li><ul><li><a href="#add">3.2.1. add</a></li><li><a href="#avg">3.2.2. avg</a></li><li><a href="#clear">3.2.3. clear</a></li><li><a href="#count">3.2.4. count</a></li><li><a href="#fromstring">3.2.5. fromstring</a></li><li><a href="#sd">3.2.6. sd</a></li><li><a href="#variance">3.2.7. variance</a></li></ul></ul></ul></div><a href="#Overview" id="goTop"><i class="fa fa-arrow-up"></i></a>
+<div id="anchors-navbar"><i class="fa fa-anchor"></i><ul><p><a href="#Lua_Count-min_Sketch_Module">Lua Count-min Sketch Module</a></p><li><a href="#Overview">1. Overview</a></li><li><a href="#Example_Usage">2. Example Usage</a></li><li><a href="#Module">3. Module</a></li><ul><li><a href="#Functions">3.1. Functions</a></li><ul><li><a href="#new">3.1.1. new</a></li></ul><li><a href="#Methods">3.2. Methods</a></li><ul><li><a href="#update">3.2.1. update</a></li><li><a href="#point_query">3.2.2. point_query</a></li><li><a href="#clear">3.2.3. clear</a></li><li><a href="#item_count">3.2.4. item_count</a></li><li><a href="#unique_count">3.2.5. unique_count</a></li><li><a href="#fromstring">3.2.6. fromstring</a></li></ul></ul></ul></div><a href="#Overview" id="goTop"><i class="fa fa-arrow-up"></i></a>
                                 
                                 </section>
                             
@@ -350,12 +340,8 @@ is globally registered and returned by the require function.</p>
 
             
                 
-                <a href="lua_cm_sketch.html" class="navigation navigation-prev " aria-label="Previous page: Count-min Sketch">
-                    <i class="fa fa-angle-left"></i>
-                </a>
                 
-                
-                <a href="lua_p2.html" class="navigation navigation-next " aria-label="Next page: Piecewise Parabolic Prediction (P2)">
+                <a href="lua_running_stats.html" class="navigation navigation-next navigation-unique" aria-label="Next page: Running Stats">
                     <i class="fa fa-angle-right"></i>
                 </a>
                 
@@ -366,7 +352,7 @@ is globally registered and returned by the require function.</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Running Stats","level":"2.2","depth":1,"next":{"title":"Piecewise Parabolic Prediction (P2)","level":"2.3","depth":1,"path":"lua_p2.md","ref":"lua_p2.md","articles":[]},"previous":{"title":"Count-min Sketch","level":"2.1","depth":1,"path":"lua_cm_sketch.md","ref":"lua_cm_sketch.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"lua_running_stats.md","mtime":"2017-09-19T22:15:18.011Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-02-02T03:49:37.698Z"},"basePath":".","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Count-min Sketch","level":"2.1","depth":1,"next":{"title":"Running Stats","level":"2.2","depth":1,"path":"lua_running_stats.md","ref":"lua_running_stats.md","articles":[]},"previous":{"title":"Library Documentation","level":"1.2","depth":1,"url":"https://trink.github.io/streaming_algorithms/doxygen/index.html","ref":"https://trink.github.io/streaming_algorithms/doxygen/index.html","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"lua_cm_sketch.md","mtime":"2018-01-31T21:43:46.070Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-02-02T03:49:37.698Z"},"basePath":".","book":{"language":""}});
         });
     </script>
 </div>

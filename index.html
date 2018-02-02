@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <title>Streaming Algorithms (0.0.1) · GitBook</title>
+        <title>Streaming Algorithms (0.0.2) · GitBook</title>
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="description" content="">
         <meta name="generator" content="GitBook 3.2.2">
@@ -94,7 +94,7 @@
                 <a href="./">
             
                     
-                    Streaming Algorithms (0.0.1)
+                    Streaming Algorithms (0.0.2)
             
                 </a>
             
@@ -122,7 +122,20 @@
         
         
     
-        <li class="chapter " data-level="2.1" data-path="lua_running_stats.html">
+        <li class="chapter " data-level="2.1" data-path="lua_cm_sketch.html">
+            
+                <a href="lua_cm_sketch.html">
+            
+                    
+                    Count-min Sketch
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.2" data-path="lua_running_stats.html">
             
                 <a href="lua_running_stats.html">
             
@@ -135,7 +148,7 @@
             
         </li>
     
-        <li class="chapter " data-level="2.2" data-path="lua_p2.html">
+        <li class="chapter " data-level="2.3" data-path="lua_p2.html">
             
                 <a href="lua_p2.html">
             
@@ -178,7 +191,7 @@
     <!-- Title -->
     <h1>
         <i class="fa fa-circle-o-notch fa-spin"></i>
-        <a href="." >Streaming Algorithms (0.0.1)</a>
+        <a href="." >Streaming Algorithms (0.0.2)</a>
     </h1>
 </div>
 
@@ -195,24 +208,28 @@
                                 
                                 <h1 id="Streaming_Algorithms">Streaming Algorithms</h1>
 <h2 id="Overview">1. Overview</h2>
-<h3 id="Running_Stats">1.1. Running Stats</h3>
+<h3 id="Count-min_Sketch">1.1. Count-min Sketch</h3>
+<p>The <a href="https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch" target="_blank">Count-min sketch</a>
+calculates the frequency of an item in a stream.</p>
+<h3 id="Running_Stats">1.2. Running Stats</h3>
 <p>Calculates the mean, variance, and standard deviation
 <a href="https://www.johndcook.com/blog/standard_deviation/" target="_blank">https://www.johndcook.com/blog/standard_deviation/</a></p>
-<h3 id="Piecewise_Parabolic_Prediction_(P2)">1.2. Piecewise Parabolic Prediction (P2)</h3>
-<p>The <a href="http://www.cs.wustl.edu/~jain/papers/ftp/psqr.pdf" target="_blank">p2</a> Algorithm for
+<h3 id="Piecewise_Parabolic_Prediction_(P2)">1.3. Piecewise Parabolic Prediction (P2)</h3>
+<p>The <a href="http://www.cs.wustl.edu/~jain/papers/ftp/psqr.pdf" target="_blank">p2</a> algorithm for
 dynamic calculation of quantiles and histograms without storing observation.</p>
 <p><a href="http://trink.github.io/streaming_algorithms" target="_blank">Full Documentation</a></p>
 <h2 id="Installation">2. Installation</h2>
 <h3 id="Prerequisites">2.1. Prerequisites</h3>
 <ul>
 <li>C compiler (GCC 4.7+, Visual Studio 2013)</li>
-<li>CMake (3.3+) - <a href="http://cmake.org/cmake/resources/software.html" target="_blank">http://cmake.org/cmake/resources/software.html</a></li>
-<li>Git <a href="http://git_scm.com/download" target="_blank">http://git_scm.com/download</a></li>
+<li>CMake (3.6+) - <a href="http://cmake.org/cmake/resources/software.html" target="_blank">http://cmake.org/cmake/resources/software.html</a></li>
+<li>Git <a href="http://git-scm.com/download" target="_blank">http://git-scm.com/download</a></li>
 </ul>
 <h4 id="Optional_(used_for_documentation)">2.1.1. Optional (used for documentation)</h4>
 <ul>
 <li>Graphviz (2.28.0) - <a href="http://graphviz.org/Download.php" target="_blank">http://graphviz.org/Download.php</a></li>
 <li>Doxygen (1.8.11+)- <a href="http://www.stack.nl/~dimitri/doxygen/download.html#latestsrc" target="_blank">http://www.stack.nl/~dimitri/doxygen/download.html#latestsrc</a></li>
+<li>gitbook (2.3) - <a href="https://www.gitbook.com/" target="_blank">https://www.gitbook.com/</a></li>
 </ul>
 <h3 id="CMake_Build_Instructions">2.2. CMake Build Instructions</h3>
 <pre><code>git clone https://github.com/trink/streaming_algorithms.git
@@ -229,7 +246,7 @@ cmake -DCMAKE_BUILD_TYPE=Release -G &quot;NMake Makefiles&quot; ..
 nmake
 
 ctest
-</code></pre><div id="anchors-navbar"><i class="fa fa-anchor"></i><ul><p><a href="#Streaming_Algorithms">Streaming Algorithms</a></p><li><a href="#Overview">1. Overview</a></li><ul><li><a href="#Running_Stats">1.1. Running Stats</a></li><li><a href="#Piecewise_Parabolic_Prediction_(P2)">1.2. Piecewise Parabolic Prediction (P2)</a></li></ul><li><a href="#Installation">2. Installation</a></li><ul><li><a href="#Prerequisites">2.1. Prerequisites</a></li><ul><li><a href="#Optional_(used_for_documentation)">2.1.1. Optional (used for documentation)</a></li></ul><li><a href="#CMake_Build_Instructions">2.2. CMake Build Instructions</a></li></ul></ul></div><a href="#Overview" id="goTop"><i class="fa fa-arrow-up"></i></a>
+</code></pre><div id="anchors-navbar"><i class="fa fa-anchor"></i><ul><p><a href="#Streaming_Algorithms">Streaming Algorithms</a></p><li><a href="#Overview">1. Overview</a></li><ul><li><a href="#Count-min_Sketch">1.1. Count-min Sketch</a></li><li><a href="#Running_Stats">1.2. Running Stats</a></li><li><a href="#Piecewise_Parabolic_Prediction_(P2)">1.3. Piecewise Parabolic Prediction (P2)</a></li></ul><li><a href="#Installation">2. Installation</a></li><ul><li><a href="#Prerequisites">2.1. Prerequisites</a></li><ul><li><a href="#Optional_(used_for_documentation)">2.1.1. Optional (used for documentation)</a></li></ul><li><a href="#CMake_Build_Instructions">2.2. CMake Build Instructions</a></li></ul></ul></div><a href="#Overview" id="goTop"><i class="fa fa-arrow-up"></i></a>
                                 
                                 </section>
                             
@@ -264,7 +281,7 @@ ctest
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Streaming Algorithms (0.0.1)","level":"1.1","depth":1,"next":{"title":"Library Documentation","level":"1.2","depth":1,"url":"https://trink.github.io/streaming_algorithms/doxygen/index.html","ref":"https://trink.github.io/streaming_algorithms/doxygen/index.html","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"README.md","mtime":"2017-07-11T17:51:45.540Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2017-07-11T17:51:49.126Z"},"basePath":".","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Streaming Algorithms (0.0.2)","level":"1.1","depth":1,"next":{"title":"Library Documentation","level":"1.2","depth":1,"url":"https://trink.github.io/streaming_algorithms/doxygen/index.html","ref":"https://trink.github.io/streaming_algorithms/doxygen/index.html","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"README.md","mtime":"2018-02-02T03:49:33.072Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-02-02T03:49:37.698Z"},"basePath":".","book":{"language":""}});
         });
     </script>
 </div>
