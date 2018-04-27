@@ -9,6 +9,7 @@ set(MODULE_SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/cm_sketch.c
   ${CMAKE_CURRENT_SOURCE_DIR}/p2.c
   ${CMAKE_CURRENT_SOURCE_DIR}/running_stats.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/time_series.c
   ${CMAKE_CURRENT_SOURCE_DIR}/streaming_algorithms.def
 )
 

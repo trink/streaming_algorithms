@@ -13,3 +13,7 @@ add_test(NAME test_running_stats COMMAND test_running_stats)
 add_executable(test_cm_sketch test_cm_sketch.c ../src/common.c)
 target_link_libraries(test_cm_sketch streaming_algorithms)
 add_test(NAME test_cm_sketch COMMAND test_cm_sketch)
+
+add_executable(test_time_series test_time_series.c ../src/common.c)
+target_link_libraries(test_time_series streaming_algorithms)
+add_test(NAME test_time_series COMMAND test_time_series)

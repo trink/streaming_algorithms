@@ -2,3 +2,4 @@ EXPORTS
 luaopen_streaming_algorithms_cm_sketch
 luaopen_streaming_algorithms_p2
 luaopen_streaming_algorithms_running_stats
+luaopen_streaming_algorithms_time_series

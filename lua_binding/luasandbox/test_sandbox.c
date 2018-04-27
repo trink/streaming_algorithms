@@ -152,12 +152,54 @@ static char* test_cms()
 }
 
 
+static char* test_ts()
+{
+  const char *output_file = "ts.preserve";
+
+  remove(output_file);
+  lsb_lua_sandbox *sb = lsb_create(NULL, "test_ts_serialize.lua",
+                                   TEST_MODULE_PATH, NULL);
+  mu_assert(sb, "lsb_create() received: NULL");
+
+  lsb_err_value ret = lsb_init(sb, output_file);
+  mu_assert(!ret, "lsb_init() received: %s %s", ret, lsb_get_error(sb));
+  lsb_add_function(sb, &lsb_test_write_output, "write_output");
+
+  int result = lsb_test_process(sb, 0);
+  mu_assert(result == 0, "lsb_test_process() received: %d %s", result,
+            lsb_get_error(sb));
+  result = lsb_test_report(sb, 0);
+  mu_assert(result == 0, "lsb_test_report() received: %d", result);
+  mu_assert(strcmp("33 44", lsb_test_output) == 0, "received: %s",
+            lsb_test_output);
+  e = lsb_destroy(sb);
+  mu_assert(!e, "lsb_destroy() received: %s", e);
+
+  // re-load to test the preserved data
+  sb = lsb_create(NULL, "test_ts_serialize.lua", TEST_MODULE_PATH, NULL);
+  mu_assert(sb, "lsb_create() received: NULL");
+
+  ret = lsb_init(sb, output_file);
+  mu_assert(!ret, "lsb_init() received: %s %s", ret, lsb_get_error(sb));
+  lsb_add_function(sb, &lsb_test_write_output, "write_output");
+
+  lsb_test_report(sb, 0);
+  mu_assert(strcmp("33 44", lsb_test_output) == 0, "received: %s",
+            lsb_test_output);
+
+  e = lsb_destroy(sb);
+  mu_assert(!e, "lsb_destroy() received: %s", e);
+  return NULL;
+}
+
+
 static char* all_tests()
 {
   mu_run_test(test_core);
   mu_run_test(test_rs);
   mu_run_test(test_p2);
   mu_run_test(test_cms);
+  mu_run_test(test_ts);
   return NULL;
 }
 

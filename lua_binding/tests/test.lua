@@ -190,3 +190,77 @@ assert(cms:update("c", -4) == 0)
 assert(cms:point_query("c") == 0)
 assert(cms:item_count() == 4)
 assert(cms:unique_count() == 3)
+
+
+-- ##########################
+local time_series = require "streaming_algorithms.time_series"
+
+local errors = {
+    function() local cb = time_series.new(2) end, -- new() incorrect # args
+    function() local cb = time_series.new(nil, 1) end, -- new() non numeric row
+    function() local cb = time_series.new(1, 1) end, -- new() 1 row
+    function() local cb = time_series.new(2, nil) end, -- new() non numeric seconds_per_row
+    function() local cb = time_series.new(2, 0) end, -- new() zero seconds_per_row
+    function() local cb = time_series.new(2, 1) -- set() non numeric time
+    cb:set(nil, 1) end,
+    function() local cb = time_series.new(2, 1) -- get() invalid object
+    local invalid = 1
+    cb.get(invalid, 1, 1) end,
+    function() local cb = time_series.new(2, 1) -- set() non numeric value
+    cb:set(0, nil) end,
+    function() local cb = time_series.new(2, 1) -- set() incorrect # args
+    cb:set(0) end,
+    function() local cb = time_series.new(2, 1) -- add() incorrect # args
+    cb:add(0) end,
+    function() local cb = time_series.new(2, 1) -- get() incorrect # args
+    cb:get() end,
+}
+
+for i, v in ipairs(errors) do
+    local ok = pcall(v)
+    if ok then error(string.format("error test %d failed\n", i)) end
+end
+
+local tests = {
+    function()
+        local stats = time_series.new(2, 1)
+        local v = stats:get(0)
+        if v ~= 0 then
+            error(string.format("initial value is not zero %d", v))
+        end
+
+        local v = stats:set(0, 1)
+        if v ~= 1 then
+            error(string.format("set failed = %d", v))
+        end
+        end,
+    function()
+        local stats = time_series.new(2, 1)
+        local cbuf_time = stats:current_time()
+        if cbuf_time ~= 1 then
+            error(string.format("current_time = %d", cbuf_time))
+        end
+        local v = stats:set(0, 1)
+        if stats:get(0) ~= 1 then
+            error(string.format("set failed = %d", v))
+        end
+        end,
+    function()
+        local cb = time_series.new(10, 1)
+        assert(not cb:get(10), "value found beyond the end of the buffer")
+        cb:set(20, 1)
+        assert(not cb:get(10), "value found beyond the start of the buffer")
+        end,
+    function()
+        local cb = time_series.new(2, 1)
+        assert(1 == cb:current_time(), "current time not 1")
+        local v = cb:set(3, 0)
+        assert(3 == cb:current_time(), "current time not 3")
+        local v = cb:add(4, 0)
+        assert(4 == cb:current_time(), "current time not 4")
+        end,
+}
+
+for i, v in ipairs(tests) do
+  v()
+end

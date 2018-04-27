@@ -3,11 +3,12 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 set(SA_SRCS
-common.c
-cm_sketch.c
-p2.c
-running_stats.c
-xxhash.c
+  common.c
+  cm_sketch.c
+  p2.c
+  running_stats.c
+  time_series.c
+  xxhash.c
 )
 
 add_library(${PROJECT_NAME} STATIC ${SA_SRCS})
