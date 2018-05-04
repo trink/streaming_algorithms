@@ -106,6 +106,43 @@ Returns the timestamp of the newest row.
 *Return*
 - The time of the most current row in the time series (nanoseconds).
 
+#### matrix_profile
+```lua
+local ats, avg, sd, mdd = ts:matrix_profile(nil, 120, 10, 1.0, "anomaly")
+-- ats == 1525465122000000000
+-- avg == 23.7
+-- sd  == 1.2739
+-- tdd == 24.5234
+
+local mp = ts:matrix_profile(1e9, 120, 10, 1.0, "mp")
+-- mp == {1.239, 1.352, ... }
+
+local mpi = ts:matrix_profile(1e9, 120, 10, 1.0, "mpi")
+-- mpi == {22, 15, ... }
+
+```
+
+Returns the requested information from the
+[matrix profile](http://www.cs.ucr.edu/~eamonn/MatrixProfile.html) calculation.
+
+*Arguments*
+- nanoseconds (unsigned/nil) The start of the interval to analyze, nil starts
+  from the beginning.
+- sequence_length (unsigned) Time series length (<= rows).
+- subsequence_length (unsigned) Must be a factor of sequence_length and greater
+  than 3.
+- percent (number) Percentage of data to base the calculation on
+  (0.0 < percent <= 100). Use less than 100 to produce an estimate of the
+  matrix profile trading accuracy for speed.
+- result (string/nil) One of the following (anomaly|mp|mpi)
+  - `anomaly` (default) Returns the timestamp of the anomaly, matrix profile
+  average, standard deviation and top discord distance.
+  - `mp` Returns the matrix profile array.
+  - `mpi` Returns the matrix profile index array.
+
+*Return*
+- The specified result described above, nil (out of range) or throws an error.
+
 #### fromstring
 ```lua
 ts:fromstring(tostring(ts1))

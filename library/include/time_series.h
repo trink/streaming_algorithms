@@ -86,6 +86,32 @@ sa_get_time_series_int(sa_time_series_int *time_series_int, uint64_t ns);
 uint64_t sa_timestamp_time_series_int(sa_time_series_int *ts);
 
 /**
+ * Computes the matrix profile for a time series or sub set of the series. See:
+ * http://www.cs.ucr.edu/~eamonn/MatrixProfile.html
+ *
+ * @param ts Pointer to time_series_int
+ * @param ns The start of the interval to analyze
+ * @param n Sequence length
+ * @param m Sub-sequence length
+ * @param percent Percentage of data to base the calculation on (0.0 <
+ *                percent <= 100). Use less than 100 to produce an estimate
+ *                of the matrix profile trading accuracy for speed.
+ * @param mp Returned pointer to the matrix profile array (MUST be freed by the
+ *           caller)
+ * @param mpi Returned pointer to the matrix profile index array (MUST be freed
+ *            by the caller)
+ * @return int Length of the returned matrix profile arrays (0 on failure). The
+ *         mp/i pointers are not modified on failure.
+ */
+int sa_mp_time_series_int(sa_time_series_int *ts,
+                          uint64_t ns,
+                          int n,
+                          int m,
+                          double percent,
+                          double *mp[],
+                          int *mpi[]);
+
+/**
  * Free the associated memory.
  *
  * @param ts Pointer to time_series_int

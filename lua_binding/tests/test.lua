@@ -214,12 +214,27 @@ local errors = {
     cb:add(0) end,
     function() local cb = time_series.new(2, 1) -- get() incorrect # args
     cb:get() end,
+    function() local cb = time_series.new(2, 1) -- matrix_profile() incorrect # args
+    cb:matrix_profile() end,
+    function() local cb = time_series.new(17, 1) -- matrix_profile() invalid sequence len
+    cb:matrix_profile(nil, 20, 4, 100) end,
+    function() local cb = time_series.new(17, 1) -- matrix_profile() invalid sub sequence len
+    cb:matrix_profile(nil, 16, 5, 100) end,
+    function() local cb = time_series.new(17, 1) -- matrix_profile() invalid percent
+    cb:matrix_profile(nil, 16, 4, 0) end,
+    function() local cb = time_series.new(17, 1) -- matrix_profile() invalid percent
+    cb:matrix_profile(nil, 16, 4, 100.1) end,
+    function() local cb = time_series.new(17, 1) -- matrix_profile() invalid result
+    cb:matrix_profile(nil, 16, 4, 100, "foo") end,
 }
 
 for i, v in ipairs(errors) do
     local ok = pcall(v)
     if ok then error(string.format("error test %d failed\n", i)) end
 end
+
+local data = { 132, 161, 144, 145, 31, 44, 47, 26, 232, 236, 254, 262, 339, 360,
+    313, 340, 1 }
 
 local tests = {
     function()
@@ -258,6 +273,43 @@ local tests = {
         assert(3 == cb:current_time(), "current time not 3")
         local v = cb:add(4, 0)
         assert(4 == cb:current_time(), "current time not 4")
+        end,
+    function()
+        local cb = time_series.new(17, 1)
+        for i,v in ipairs(data) do
+            cb:add(i - 1, v)
+        end
+        local ats, avg, sd, tdd = cb:matrix_profile(nil, 16, 4, 100)
+        assert(ats == 3, ats)
+        assert(math.abs(avg - 1.070455) < .000001, avg)
+        assert(math.abs(sd - 0.634018) < .000001, sd)
+        assert(math.abs(tdd - 2.238618) < .000001, tdd)
+
+        local mp = cb:matrix_profile(nil, 16, 4, 100, "mp")
+        local mp_len = #mp
+        assert(mp_len == 13, mp_len)
+        local mpi = cb:matrix_profile(nil, 16, 4, 100, "mpi")
+        mp_len = #mpi
+        assert(mp_len == 13, mp_len)
+
+        local mp_ev = { 1.5010956572519172, 1.7133271671869412,
+          1.4465117438199946, 2.2386180615118265, 1.4207401525040495,
+          0.62038241908389491, 0.39903111714324457, 1.0783010406460811,
+          0.17635816443144478, 0.62038241908389491, 0.17635816443144478,
+          1.0783010406460811, 1.446511743819994 }
+        local mpi_ev = { 7, 4, 12, 1, 11, 9, 10, 11, 10, 5, 8, 7, 2 }
+        for i=0, mp_len - 1 do
+            assert(math.abs(mp[i+1] - mp_ev[i+1]) < .000001, mp[i+1])
+            assert(mpi[i+1] == mpi_ev[i+1], mpi[i+1])
+        end
+        end,
+    function()
+        local cb = time_series.new(17, 1)
+        local ats, avg, sd, tdd = cb:matrix_profile(nil, 16, 4, 100)
+        assert(ats == 0, ats)
+        assert(avg == 0, avg)
+        assert(sd == 0, sd)
+        assert(tdd == 1/0, tdd)
         end,
 }
 

@@ -19,6 +19,7 @@
 #include <luasandbox_serialize.h>
 #endif
 
+#include "running_stats.h"
 #include "time_series_impl.h"
 
 static const char *g_int_mt  = "trink.streaming_algorithms.time_series_int";
@@ -106,6 +107,77 @@ static int ts_get_int(lua_State *lua)
 }
 
 
+static int ts_mp_int(lua_State *lua)
+{
+  static const char *results[] = {"anomaly", "mp", "mpi", NULL};
+
+  sa_time_series_int *ts = luaL_checkudata(lua, 1, g_int_mt);
+  uint64_t ns;
+  if (lua_isnil(lua, 2)) {
+    ns = ts->current_time - ts->ns_per_row * (ts->rows - 1);
+  } else {
+    ns = check_ns(lua, 2);
+    ns = ns - (ns % ts->ns_per_row);
+  }
+  int n = luaL_checkint(lua, 3);
+  int m = luaL_checkint(lua, 4);
+  luaL_argcheck(lua, n <= ts->rows && n >= 4 * m , 3,
+                "invalid sequence length");
+  luaL_argcheck(lua, m > 3 && n % m == 0, 4, "invalid sub-sequence length");
+  double percent = luaL_checknumber(lua, 5);
+  luaL_argcheck(lua, percent > 0 && percent <= 100, 5, "invalid percent");
+  int result = luaL_checkoption(lua, 6, results[0], results);
+
+  double *mp = NULL;
+  int *mpi = NULL;
+  int mp_len = sa_mp_time_series_int(ts, ns, n, m, percent, &mp, &mpi);
+  if (mp_len == 0) {
+    return 0;
+  }
+  int rv = 4;
+  switch (result) {
+  case 0:
+    {
+      double discord = 0;
+      double idx = 0;
+      sa_running_stats dis;
+      sa_init_running_stats(&dis);
+      for (int i = 0; i < mp_len; ++i) {
+        sa_add_running_stats(&dis, mp[i]);
+        if (mp[i] > discord) {
+          discord = mp[i];
+          idx = i;
+        }
+      }
+      lua_pushnumber(lua, ns + idx * ts->ns_per_row);
+      lua_pushnumber(lua, dis.mean);
+      lua_pushnumber(lua, sa_sd_running_stats(&dis));
+      lua_pushnumber(lua, discord);
+    }
+    break;
+  case 1:
+    lua_createtable(lua, mp_len, 0);
+    for (int i = 0; i < mp_len; ++i) {
+      lua_pushnumber(lua, mp[i]);
+      lua_rawseti(lua, -2, i + 1);
+    }
+    rv = 1;
+    break;
+  case 2:
+    lua_createtable(lua, mp_len, 0);
+    for (int i = 0; i < mp_len; ++i) {
+      lua_pushinteger(lua, (lua_Integer)mpi[i]);
+      lua_rawseti(lua, -2, i + 1);
+    }
+    rv = 1;
+    break;
+  }
+  free(mp);
+  free(mpi);
+  return rv;
+}
+
+
 static int ts_current_time_int(lua_State *lua)
 {
   sa_time_series_int *ts = check_ts_int(lua, 1);
@@ -188,6 +260,7 @@ static const struct luaL_reg ts_int_m[] =
   { "current_time", ts_current_time_int },
   { "fromstring", ts_fromstring_int },
   { "get", ts_get_int },
+  { "matrix_profile", ts_mp_int },
   { "set", ts_set_int },
   { NULL, NULL }
 };

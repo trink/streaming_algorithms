@@ -8,12 +8,27 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "common.h"
+#include "running_stats.h"
 #include "time_series_impl.h"
+
+struct mp_calc {
+  double  *stats;
+  double  *dp;
+  double  *mp;
+  int     *mpi;
+  int     *rand;
+  int     rand_len;
+  int     mp_len;
+  int     n;
+  int     m;
+  int     sidx;
+};
 
 
 static int find_index_int(sa_time_series_int *ts, uint64_t ns, bool advance)
@@ -103,6 +118,183 @@ int sa_get_time_series_int(sa_time_series_int *ts, uint64_t ns)
   int idx = find_index_int(ts, ns, false);
   if (idx == -1) {return INT_MIN;}
   return ts->v[idx];
+}
+
+
+static void shuffle_idx(int *a, int len)
+{
+  for (int i = 0; i < len - 1; ++i) {
+    int j = i + rand() / (RAND_MAX / (len - i) + 1);
+    int tmp = a[j];
+    a[j] = a[i];
+    a[i] = tmp;
+  }
+}
+
+
+static bool init_calc(struct mp_calc *c, int n, int m)
+{
+  c->n = n;
+  c->m = m;
+  c->mp_len = n - m + 1;
+  c->rand = NULL;
+  c->mpi = NULL;
+  c->mp = NULL;
+  c->dp = NULL;
+
+  c->stats = malloc(sizeof(double) * 2 * c->mp_len);
+  if (!c->stats) {return false;}
+
+  c->dp = malloc(sizeof(double) * c->n);
+  if (!c->dp) {return false;}
+
+  c->mp = malloc(sizeof(double) * c->mp_len);
+  if (!c->mp) {return false;}
+
+  c->mpi = calloc(c->mp_len, sizeof(int));
+  if (!c->mpi) {return false;}
+
+  int exclude = m / 4;
+  c->rand_len = c->mp_len - exclude - 1;
+  c->rand = malloc(sizeof(int) * c->rand_len);
+  if (!c->rand) {return false;}
+
+  for (int i = 0; i < c->mp_len; ++i) {
+    c->mp[i] = INFINITY;
+  }
+
+  for (int i = 0, idx = exclude + 1; idx < c->mp_len; ++i, ++idx) {
+    c->rand[i] = idx;
+  }
+  shuffle_idx(c->rand, c->rand_len);
+  return true;
+}
+
+
+static int tsidx(int j, int n, int offset)
+{
+  int idx = j + offset;
+  return idx >= n ? idx - n : idx;
+}
+
+
+static void compute_stats(sa_time_series_int *ts, struct mp_calc *c)
+{
+  sa_running_stats rs;
+  sa_init_running_stats(&rs);
+  int window = 0;
+  int idx = c->sidx;
+  for (int i = 0; i < c->n; ++i, ++idx) {
+    if (idx == ts->rows) {idx = 0;}
+    if (i >= c->m) {
+      c->stats[window * 2] = rs.mean;
+      c->stats[window * 2 + 1] = sa_usd_running_stats(&rs);
+      ++window;
+      int fi = idx - c->m;
+      if (fi < 0) {
+        fi += ts->rows;
+      }
+      double pm = rs.mean;
+      rs.mean += (ts->v[idx] - ts->v[fi]) / rs.count;
+      rs.sum += (ts->v[idx] - pm) * (ts->v[idx] - rs.mean) -
+          (ts->v[fi] - pm) * (ts->v[fi] - rs.mean);
+    } else {
+      sa_add_running_stats(&rs, ts->v[idx]);
+    }
+  }
+  c->stats[window * 2] = rs.mean;
+  c->stats[window * 2 + 1] = sa_usd_running_stats(&rs);
+}
+
+
+static void scrimp_int(sa_time_series_int *ts, struct mp_calc *c, int stop)
+{
+  compute_stats(ts, c);
+  int j, i;
+  double d, lastz;
+  for (int ri = 0; ri < c->rand_len; ++ri) {
+    int diag = c->rand[ri];
+    for (j = diag; j < c->n; ++j) {
+      c->dp[j] = ts->v[tsidx(j, ts->rows, c->sidx)]
+          * ts->v[tsidx(j - diag, ts->rows, c->sidx)];
+    }
+
+    // evaluate the first distance value in the current diagonal
+    lastz = 0;
+    for (j = 0; j < c->m; j++) {
+      lastz += c->dp[j + diag];
+    }
+
+    j = diag, i = 0;
+    d = 2 * (c->m - (lastz - c->m * c->stats[j * 2] * c->stats[i * 2])
+             / (c->stats[j * 2 + 1] * c->stats[i * 2 + 1]));
+    if (d < c->mp[j]) {
+      c->mp[j] = d;
+      c->mpi[j] = i;
+    }
+    if (d < c->mp[i]) {
+      c->mp[i] = d;
+      c->mpi[i] = j;
+    }
+
+    // evaluate the remaining distance values in the current diagonal
+    for (j = diag + 1; j < c->mp_len; ++j) {
+      i = j - diag;
+      lastz = lastz + c->dp[j + c->m - 1] - c->dp[j - 1];
+      d = 2 * (c->m - (lastz - c->m * c->stats[j * 2] * c->stats[i * 2])
+               / (c->stats[j * 2 + 1] * c->stats[i * 2 + 1]));
+      if (d < c->mp[j]) {
+        c->mp[j] = d;
+        c->mpi[j] = i;
+      }
+      if (d < c->mp[i]) {
+        c->mp[i] = d;
+        c->mpi[i] = j;
+      }
+    }
+    if (ri == stop) {
+      break;
+    }
+  }
+
+  // convert to distances
+  for (i = 0; i < c->mp_len; ++i) {
+    c->mp[i] = sqrt(fabs(c->mp[i]));
+  }
+}
+
+
+int sa_mp_time_series_int(sa_time_series_int *ts,
+                          uint64_t ns,
+                          int n,
+                          int m,
+                          double percent,
+                          double *mp[],
+                          int *mpi[])
+{
+  int idx = find_index_int(ts, ns, false);
+  if (idx == -1 || n > ts->rows || percent <= 0 || percent > 100
+      || m < 4 || n < 4 * m || n % m != 0) {
+    return 0;
+  }
+
+  struct mp_calc c;
+  c.sidx = idx;
+  if (!init_calc(&c, n, m)) {
+    free(c.stats);
+    free(c.dp);
+    free(c.rand);
+    free(c.mp);
+    free(c.mpi);
+    return 0;
+  }
+  scrimp_int(ts, &c, percent / 100 * c.mp_len + 1);
+  free(c.stats);
+  free(c.dp);
+  free(c.rand);
+  *mp = c.mp;
+  *mpi = c.mpi;
+  return c.mp_len;
 }
 
 
