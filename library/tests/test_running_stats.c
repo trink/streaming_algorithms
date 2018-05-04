@@ -49,6 +49,8 @@ static char* test_calculation()
   mu_assert(stats.mean  == 2, "received: %g", stats.mean);
   sd = sa_sd_running_stats(&stats);
   mu_assert(sd == 1.0, "received: %g", sd);
+  sd = sa_usd_running_stats(&stats);
+  mu_assert(fabs(sd - 0.816497) < .000001, "received: %g", sd);
   sd = sa_variance_running_stats(&stats);
   mu_assert(sd == 1.0, "received: %g", sd);
   return NULL;

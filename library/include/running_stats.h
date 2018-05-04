@@ -49,13 +49,22 @@ void sa_add_running_stats(sa_running_stats *s, double d);
 double sa_variance_running_stats(sa_running_stats *s);
 
 /**
- * Returns the standard deviation of the stats.
+ * Returns the corrected sample standard deviation of the stats.
  *
  * @param s Stat structure
  *
  * @return double Standard deviation of the stats up to this point
  */
 double sa_sd_running_stats(sa_running_stats *s);
+
+/**
+ * Returns the uncorrected sample standard deviation of the stats.
+ *
+ * @param s Stat structure
+ *
+ * @return double Uncorrected standard deviation of the stats up to this point
+ */
+double sa_usd_running_stats(sa_running_stats *s);
 
 /**
  * Serialize the internal state to a buffer.

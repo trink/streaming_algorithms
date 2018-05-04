@@ -109,6 +109,14 @@ static int rs_sd(lua_State *lua)
 }
 
 
+static int rs_usd(lua_State *lua)
+{
+  sa_running_stats *rs = check_rs(lua, 1);
+  lua_pushnumber(lua, sa_usd_running_stats(rs));
+  return 1;
+}
+
+
 static int rs_variance(lua_State *lua)
 {
   sa_running_stats *rs = check_rs(lua, 1);
@@ -165,6 +173,7 @@ static const struct luaL_reg rs_m[] =
   { "count", rs_count },
   { "fromstring", rs_fromstring },
   { "sd", rs_sd },
+  { "usd", rs_usd },
   { "variance", rs_variance },
   { NULL, NULL }
 };

@@ -105,7 +105,20 @@ Restores the stats to the previously serialized state.
 local sd = stat:sd()
 ```
 
-Returns the current standard deviation.
+Returns the current corrected sample standard deviation.
+
+*Arguments*
+- none
+
+*Return*
+- sd (number)
+
+#### usd
+```lua
+local sd = stat:usd()
+```
+
+Returns the current uncorrected sample standard deviation.
 
 *Arguments*
 - none

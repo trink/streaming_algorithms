@@ -50,6 +50,13 @@ double sa_sd_running_stats(sa_running_stats *s)
 }
 
 
+double sa_usd_running_stats(sa_running_stats *s)
+{
+  if (s->count < 2) return 0.0;
+  return sqrt(s->sum / s->count);
+}
+
+
 char* sa_serialize_running_stats(sa_running_stats *s, size_t *len)
 {
   *len = sizeof(double) * 3;

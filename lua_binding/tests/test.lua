@@ -32,6 +32,8 @@ local function verify_stat(stat)
     assert(rv == 5.5, string.format("received %g", rv))
     rv = stat:sd()
     assert(math.abs(3.02765 - rv) < 0.00001 , string.format("received %g", rv))
+    rv = stat:usd()
+    assert(math.abs(2.87228 - rv) < 0.00001 , string.format("received %g", rv))
     rv = stat:variance()
     assert(math.abs(9.16667 - rv) < 0.00001 , string.format("received %g", rv))
 end
@@ -47,8 +49,6 @@ stat:clear()
 rv = stat:count()
 assert(rv == 0, string.format("received %d", rv))
 verify_stat(stat1)
-
-
 
 
 
