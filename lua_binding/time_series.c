@@ -6,6 +6,7 @@
 
 /** @brief Lua streaming algorithms time seriest binding @file */
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <stdlib.h>
@@ -41,6 +42,18 @@ static uint64_t check_ns(lua_State *lua, int idx)
 }
 
 
+static int get_idx(sa_time_series_int *ts, uint64_t ns)
+{
+  int64_t current_row = ts->current_time / ts->ns_per_row;
+  int64_t requested_row = ns / ts->ns_per_row;
+  int64_t row_delta = requested_row - current_row;
+  if (requested_row > current_row || abs(row_delta) >= ts->rows) {
+    return -1;
+  }
+  return requested_row % ts->rows;
+}
+
+
 static int ts_new(lua_State *lua)
 {
   int n = lua_gettop(lua);
@@ -60,6 +73,15 @@ static int ts_new(lua_State *lua)
   luaL_getmetatable(lua, g_int_mt);
   lua_setmetatable(lua, -2);
   return 1;
+}
+
+
+static int ts_get_configuration_int(lua_State *lua)
+{
+  sa_time_series_int *ts = check_ts_int(lua, 1);
+  lua_pushinteger(lua, ts->rows);
+  lua_pushnumber(lua, ts->ns_per_row);
+  return 2;
 }
 
 
@@ -93,6 +115,42 @@ static int ts_set_int(lua_State *lua)
 }
 
 
+static int ts_merge_int(lua_State *lua)
+{
+  static const char *ops[] = { "add", "set", NULL };
+
+  int i = lua_gettop(lua);
+  luaL_argcheck(lua, i >= 2 && i <= 3, 0, "incorrect number of arguments");
+  sa_time_series_int *ts = luaL_checkudata(lua, 1, g_int_mt);
+  sa_time_series_int *ts1 = luaL_checkudata(lua, 2, g_int_mt);
+  int op = luaL_checkoption(lua, 3, ops[0], ops);
+  luaL_argcheck(lua, ts->ns_per_row <= ts1->ns_per_row, 3,
+                "the resolution of the time series being merged must be "
+                "greater than or equal to the destination");
+
+  int (*fn)(sa_time_series_int *, uint64_t, int);
+  switch (op) {
+  case 0:
+    fn = sa_add_time_series_int;
+    break;
+  case 1:
+    fn = sa_set_time_series_int;
+    break;
+  }
+
+  uint64_t start = ts1->current_time - ts1->ns_per_row * (ts1->rows - 1);
+  int idx = ts1->current_time / ts1->ns_per_row % ts1->rows + 1;
+  for (int i = 0; i < ts1->rows; ++i, ++idx) {
+    if (idx == ts1->rows) {
+      idx = 0;
+    }
+    uint64_t ns = start + i * ts1->ns_per_row;
+    fn(ts, ns, ts1->v[idx]);
+  }
+  return 0;
+}
+
+
 static int ts_get_int(lua_State *lua)
 {
   sa_time_series_int *ts = check_ts_int(lua, 2);
@@ -107,9 +165,188 @@ static int ts_get_int(lua_State *lua)
 }
 
 
+static int ts_get_range_int(lua_State *lua)
+{
+  sa_time_series_int *ts = check_ts_int(lua, 3);
+  uint64_t ns;
+  if (lua_isnil(lua, 2)) {
+    ns = ts->current_time - ts->ns_per_row * (ts->rows - 1);
+  } else {
+    ns = check_ns(lua, 2);
+    ns = ns - (ns % ts->ns_per_row);
+  }
+  int n = luaL_checkint(lua, 3);
+  luaL_argcheck(lua, n <= ts->rows, 3, "invalid sequence length");
+
+  int idx = get_idx(ts, ns);
+  if (idx == -1) {return 0; }
+
+  lua_createtable(lua, n, 0);
+  for (int i = 0; i < n; ++i, ++idx) {
+    if (idx == ts->rows) {
+      idx = 0;
+    }
+    lua_pushinteger(lua, (lua_Integer)ts->v[idx]);
+    lua_rawseti(lua, -2, i + 1);
+  }
+  return 1;
+}
+
+
+static double stats_sum_int(sa_time_series_int *ts, int idx, int n,
+                            bool include_zero, int *rows)
+{
+  double sum = 0;
+  for (int i = 0; i < n; ++i, ++idx) {
+    if (idx == ts->rows) {
+      idx = 0;
+    }
+    int v = ts->v[idx];
+    if (v != 0 || include_zero) {
+      *rows += 1;
+      sum += v;
+    }
+  }
+  return sum;
+}
+
+
+static double stats_min_int(sa_time_series_int *ts, int idx, int n,
+                            bool include_zero, int *rows)
+{
+  double min = INT_MAX;
+  for (int i = 0; i < n; ++i, ++idx) {
+    if (idx == ts->rows) {
+      idx = 0;
+    }
+    int v = ts->v[idx];
+    if (v != 0 || include_zero) {
+      *rows += 1;
+      if (v < min) {
+        min = v;
+      }
+    }
+  }
+  return min;
+}
+
+
+static double stats_max_int(sa_time_series_int *ts, int idx, int n,
+                            bool include_zero, int *rows)
+{
+  double max = INT_MIN;
+  for (int i = 0; i < n; ++i, ++idx) {
+    if (idx == ts->rows) {
+      idx = 0;
+    }
+    int v = ts->v[idx];
+    if (v != 0 || include_zero) {
+      *rows += 1;
+      if (v > max) {
+        max = v;
+      }
+    }
+  }
+  return max;
+}
+
+
+static double stats_avg_int(sa_time_series_int *ts, int idx, int n,
+                            bool include_zero, int *rows)
+{
+  double sum = 0;
+  for (int i = 0; i < n; ++i, ++idx) {
+    if (idx == ts->rows) {
+      idx = 0;
+    }
+    int v = ts->v[idx];
+    if (v != 0 || include_zero) {
+      *rows += 1;
+      sum += v;
+    }
+  }
+  return *rows != 0 ? sum / *rows : 0;
+}
+
+
+static double stats_sd_int(sa_time_series_int *ts, int idx, int n,
+                           bool include_zero, bool corrected, int *rows)
+{
+  sa_running_stats sd;
+  sa_init_running_stats(&sd);
+
+  for (int i = 0; i < n; ++i, ++idx) {
+    if (idx == ts->rows) {
+      idx = 0;
+    }
+    int v = ts->v[idx];
+    if (v != 0 || include_zero) {
+      *rows += 1;
+      sa_add_running_stats(&sd, v);
+    }
+  }
+  return corrected ? sa_sd_running_stats(&sd) : sa_usd_running_stats(&sd);
+}
+
+
+static int ts_stats_int(lua_State *lua)
+{
+  static const char *types[] = { "sum", "min", "max", "avg", "sd", "usd",
+    NULL };
+
+  int i = lua_gettop(lua);
+  luaL_argcheck(lua, i >= 3 && i <= 5, 0, "incorrect number of arguments");
+  sa_time_series_int *ts = luaL_checkudata(lua, 1, g_int_mt);
+
+  uint64_t ns;
+  if (lua_isnil(lua, 2)) {
+    ns = ts->current_time - ts->ns_per_row * (ts->rows - 1);
+  } else {
+    ns = check_ns(lua, 2);
+    ns = ns - (ns % ts->ns_per_row);
+  }
+  int n = luaL_checkint(lua, 3);
+  luaL_argcheck(lua, n <= ts->rows, 3, "invalid sequence length");
+
+  int type = luaL_checkoption(lua, 4, types[0], types);
+
+  int include_zero = lua_toboolean(lua, 5);
+
+  int idx = get_idx(ts, ns);
+  if (idx == -1) {return 0;}
+
+  lua_createtable(lua, n, 0);
+  double result = 0;
+  int rows = 0;
+  switch (type) {
+  case 0:
+    result = stats_sum_int(ts, idx, n, include_zero, &rows);
+    break;
+  case 1:
+    result = stats_min_int(ts, idx, n, include_zero, &rows);
+    break;
+  case 2:
+    result = stats_max_int(ts, idx, n, include_zero, &rows);
+    break;
+  case 3:
+    result = stats_avg_int(ts, idx, n, include_zero, &rows);
+    break;
+  case 4:
+    result = stats_sd_int(ts, idx, n, include_zero, true, &rows);
+    break;
+  case 5:
+    result = stats_sd_int(ts, idx, n, include_zero, false, &rows);
+    break;
+  }
+  lua_pushnumber(lua, result);
+  lua_pushinteger(lua, rows);
+  return 2;
+}
+
+
 static int ts_mp_int(lua_State *lua)
 {
-  static const char *results[] = {"anomaly", "mp", "mpi", NULL};
+  static const char *results[] = { "anomaly", "mp", "mpi", NULL };
 
   sa_time_series_int *ts = luaL_checkudata(lua, 1, g_int_mt);
   uint64_t ns;
@@ -121,7 +358,7 @@ static int ts_mp_int(lua_State *lua)
   }
   int n = luaL_checkint(lua, 3);
   int m = luaL_checkint(lua, 4);
-  luaL_argcheck(lua, n <= ts->rows && n >= 4 * m , 3,
+  luaL_argcheck(lua, n <= ts->rows && n >= 4 * m, 3,
                 "invalid sequence length");
   luaL_argcheck(lua, m > 3 && n % m == 0, 4, "invalid sub-sequence length");
   double percent = luaL_checknumber(lua, 5);
@@ -260,8 +497,12 @@ static const struct luaL_reg ts_int_m[] =
   { "current_time", ts_current_time_int },
   { "fromstring", ts_fromstring_int },
   { "get", ts_get_int },
+  { "get_configuration", ts_get_configuration_int },
+  { "get_range", ts_get_range_int },
   { "matrix_profile", ts_mp_int },
+  { "merge", ts_merge_int },
   { "set", ts_set_int },
+  { "stats", ts_stats_int },
   { NULL, NULL }
 };
 

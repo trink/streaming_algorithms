@@ -37,6 +37,20 @@ registered and returned by the require function.
 
 ### Methods
 
+#### get_configuration
+```lua
+local rows, ns_per_row = ts:get_config()
+```
+
+Returns the configuration of the time series structure.
+
+*Arguments*
+- none
+-
+*Return*
+- rows (unsigned) The number of rows in the buffer.
+- ns_per_row (unsigned) The number of nanoseconds each row represents.
+
 #### add
 ```lua
 v = ts:add(1e9, 1)
@@ -75,6 +89,24 @@ Overwrites the value at a specific row in the time series.
 - The resulting value of the row or nil if the time was outside the range
   of the window.
 
+#### merge
+```lua
+ts:merge(ts1, op)
+```
+
+Merges one time series into another based on the specified operation. The
+resolution of time series being merged must be smaller or equal to the
+destination resolution.
+
+*Arguments*
+- ts1 (userdata) Time series userdata to merge.
+- op (string/nil) One of the following entries:
+    - add (default)
+    - set
+
+*Return*
+- none
+
 #### get
 ```lua
 v = ts:get(1e9)
@@ -91,6 +123,22 @@ Fetches the value at a specific row in the time series.
 - The value at the specifed row or nil if the time was outside the range
   of the window.
 
+#### get_range
+```lua
+a = ts:get_range(nil, 2)
+-- a == {98, 99}
+```
+
+Returns an array of values spanning the specified range.
+
+*Arguments*
+- nanoseconds (unsigned/nil) The start of the interval to return, nil starts
+  from the beginning.
+- sequence_length (unsigned) Time series length (<= rows).
+
+*Returns*
+- Array of values or nil if the range fell outside of the buffer.
+
 #### current_time
 ```lua
 t = ts:current_time()
@@ -105,6 +153,32 @@ Returns the timestamp of the newest row.
 
 *Return*
 - The time of the most current row in the time series (nanoseconds).
+
+#### stats
+```lua
+sum, cnt = ts:stats(nil, 10, "sum")
+-- sum == 23, cnt = 10
+```
+
+Returns the requested type of stats specified range.
+
+*Arguments*
+- nanoseconds (unsigned/nil) The start of the interval to return, nil starts
+  from the beginning.
+- sequence_length (unsigned) Time series length (<= rows).
+- type (string/nil) One of the following entries:
+    - sum (default)
+    - min
+    - max
+    - avg
+    - sd    - corrected standard deviation
+    - usd   - uncorrected standard deviation
+- include_zero (bool/nil) - Treat a zero value as a value instead of unitialized
+  (default: false, integer time series only).
+
+*Returns*
+- stat (number) Resulting `type` output
+- rows (number) Number of rows used in the computation.
 
 #### matrix_profile
 ```lua

@@ -226,6 +226,22 @@ local errors = {
     cb:matrix_profile(nil, 16, 4, 100.1) end,
     function() local cb = time_series.new(17, 1) -- matrix_profile() invalid result
     cb:matrix_profile(nil, 16, 4, 100, "foo") end,
+    function() local cb = time_series.new(2, 1) -- get_range() incorrect # args
+    cb:get_range() end,
+    function() local cb = time_series.new(2, 1) -- get_range() invalid ns
+    cb:get_range(-1, 2) end,
+    function() local cb = time_series.new(2, 1) -- get_range() invalid length
+    cb:get_range(nil, 3) end,
+    function() local cb = time_series.new(2, 1) -- merge() invalid ts
+    cb:stats(true) end,
+    function() local cb = time_series.new(2, 1) -- merge() invalid op
+    cb:stats(cp, "foo") end,
+    function() local cb = time_series.new(2, 1) -- stats() invalid ns
+    cb:stats(-1, 2) end,
+    function() local cb = time_series.new(2, 1) -- stats() invalid length
+    cb:stats(nil, 3) end,
+    function() local cb = time_series.new(2, 1) -- stats() invalid length
+    cb:stats(nil, 2, "foo") end,                -- stats() invalid type
 }
 
 for i, v in ipairs(errors) do
@@ -248,6 +264,9 @@ local tests = {
         if v ~= 1 then
             error(string.format("set failed = %d", v))
         end
+        local rows, nspr = stats:get_configuration()
+        assert(rows == 2)
+        assert(nspr == 1)
         end,
     function()
         local stats = time_series.new(2, 1)
@@ -310,6 +329,85 @@ local tests = {
         assert(avg == 0, avg)
         assert(sd == 0, sd)
         assert(tdd == 1/0, tdd)
+        end,
+    function()
+        local cb = time_series.new(6, 1)
+        for i=0, 5 do
+            cb:add(i, i)
+        end
+        local range = cb:get_range(1, 2)
+        assert(#range == 2)
+        assert(range[1] == 1)
+        assert(range[2] == 2)
+        end,
+    function()
+        local cb = time_series.new(6, 1)
+        for i=0, 5 do
+            cb:add(i, i)
+        end
+        local cb1 = time_series.new(10, 1)
+        cb1:merge(cb, "set")
+        local range = cb1:get_range(1, 2)
+        assert(#range == 2)
+        assert(range[1] == 1)
+        assert(range[2] == 2)
+        cb1:merge(cb1, "add")
+        range = cb1:get_range(1, 2)
+        assert(#range == 2)
+        assert(range[1] == 2)
+        assert(range[2] == 4)
+        cb1:merge(cb1)
+        range = cb1:get_range(1, 2)
+        assert(#range == 2)
+        assert(range[1] == 4)
+        assert(range[2] == 8)
+        end,
+    function()
+        local cb = time_series.new(6, 1)
+        for i,v in ipairs{1,2,3,0,5,6} do
+            cb:add(i, v)
+        end
+        local stat, rows = cb:stats(nil, 6, "sum")
+        assert(stat == 17, stat)
+        assert(rows == 5, rows)
+        stat, rows = cb:stats(nil, 6, "sum", true)
+        assert(stat == 17, stat)
+        assert(rows == 6, rows)
+
+        stat, rows = cb:stats(nil, 6, "min")
+        assert(stat == 1, stat)
+        assert(rows == 5, rows)
+        stat, rows = cb:stats(nil, 6, "min", true)
+        assert(stat == 0, stat)
+        assert(rows == 6, rows)
+
+        stat, rows = cb:stats(nil, 6, "max")
+        assert(stat == 6, stat)
+        assert(rows == 5, rows)
+        stat, rows = cb:stats(nil, 6, "max", true)
+        assert(stat == 6, stat)
+        assert(rows == 6, rows)
+
+        stat, rows = cb:stats(nil, 6, "avg")
+        assert(stat == 3.4, stat)
+        assert(rows == 5, rows)
+        stat, rows = cb:stats(nil, 6, "avg", true)
+        assert(math.abs(2.83333 - stat) < .00001, stat)
+        assert(rows == 6, rows)
+
+        stat, rows = cb:stats(nil, 6, "sd")
+        assert(math.abs(2.07364 - stat) < .00001, stat)
+        assert(rows == 5, rows)
+        stat, rows = cb:stats(nil, 6, "sd", true)
+        assert(math.abs(2.31660 - stat) < .00001, stat)
+        assert(rows == 6, rows)
+
+        stat, rows = cb:stats(nil, 6, "usd")
+        assert(math.abs(1.85472 - stat) < .00001, stat)
+        assert(rows == 5, rows)
+        stat, rows = cb:stats(nil, 6, "usd", true)
+        assert(math.abs(2.11476 - stat) < .00001, stat)
+        assert(rows == 6, rows)
         end,
 }
 
