@@ -6,6 +6,7 @@
 
 /** @brief Lua streaming algorithms time seriest binding @file */
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
@@ -20,6 +21,7 @@
 #include <luasandbox_serialize.h>
 #endif
 
+#include "p2.h"
 #include "running_stats.h"
 #include "time_series_impl.h"
 
@@ -37,7 +39,7 @@ static sa_time_series_int* check_ts_int(lua_State *lua, int args)
 static uint64_t check_ns(lua_State *lua, int idx)
 {
   double d = luaL_checknumber(lua, idx);
-  luaL_argcheck(lua, d >= 0, idx, "must be postitive");
+  luaL_argcheck(lua, d >= 0 && d <= UINT64_MAX, idx, "must be 0 - UINT64_MAX");
   return (uint64_t)d;
 }
 
@@ -61,7 +63,7 @@ static int ts_new(lua_State *lua)
   int rows = luaL_checkint(lua, 1);
   luaL_argcheck(lua, rows > 1, 1, "must be > 1");
   double ns = luaL_checknumber(lua, 2);
-  luaL_argcheck(lua, ns > 0, 2, "must be > 0");
+  luaL_argcheck(lua, ns > 0 && ns <= UINT64_MAX, 2, "must be 1 - UINT64_MAX");
   // the third argument will be the optional type currently just int
 
   sa_time_series_int *ts = lua_newuserdata(lua, sizeof(*ts) +
@@ -346,7 +348,8 @@ static int ts_stats_int(lua_State *lua)
 
 static int ts_mp_int(lua_State *lua)
 {
-  static const char *results[] = { "anomaly", "mp", "mpi", NULL };
+  static const char *results[] = { "anomaly", "anomaly_current", "mp", "mpi",
+    NULL };
 
   sa_time_series_int *ts = luaL_checkudata(lua, 1, g_int_mt);
   uint64_t ns;
@@ -358,9 +361,8 @@ static int ts_mp_int(lua_State *lua)
   }
   int n = luaL_checkint(lua, 3);
   int m = luaL_checkint(lua, 4);
-  luaL_argcheck(lua, n <= ts->rows && n >= 4 * m, 3,
-                "invalid sequence length");
-  luaL_argcheck(lua, m > 3 && n % m == 0, 4, "invalid sub-sequence length");
+  luaL_argcheck(lua, n <= ts->rows && n / 4 >= m, 3, "invalid sequence length");
+  luaL_argcheck(lua, m > 3, 4, "invalid sub-sequence length");
   double percent = luaL_checknumber(lua, 5);
   luaL_argcheck(lua, percent > 0 && percent <= 100, 5, "invalid percent");
   int result = luaL_checkoption(lua, 6, results[0], results);
@@ -371,28 +373,39 @@ static int ts_mp_int(lua_State *lua)
   if (mp_len == 0) {
     return 0;
   }
-  int rv = 4;
+  int rv = 0;
   switch (result) {
   case 0:
+  case 1: // todo this can be optimized to only compute the profile for the last
+          // window
     {
-      double discord = 0;
-      double idx = 0;
-      sa_running_stats dis;
-      sa_init_running_stats(&dis);
-      for (int i = 0; i < mp_len; ++i) {
-        sa_add_running_stats(&dis, mp[i]);
+      sa_p2_quantile *q95 = sa_create_p2_quantile(0.95);
+      sa_p2_quantile *q50 = sa_create_p2_quantile(0.50);
+      int idx = 0;
+      double discord = -INFINITY;
+      double e95 = 0;
+      double e50 = 0;
+      for (int i = result == 0 ? 0 : mp_len - m; i < mp_len; ++i) {
+        e95 = sa_add_p2_quantile(q95, mp[i]);
+        e50 = sa_add_p2_quantile(q50, mp[i]);
         if (mp[i] > discord) {
           discord = mp[i];
           idx = i;
         }
       }
-      lua_pushnumber(lua, ns + idx * ts->ns_per_row);
-      lua_pushnumber(lua, dis.mean);
-      lua_pushnumber(lua, sa_sd_running_stats(&dis));
-      lua_pushnumber(lua, discord);
+      if (!isinf(discord)) {
+        // percentage of the range represented by the top 5% of discords
+        double p = (discord - e95) / (discord - e50) * 100;
+        lua_pushnumber(lua, ns + idx * ts->ns_per_row);
+        lua_pushnumber(lua, p);
+        lua_pushnumber(lua, discord - e50);
+        rv = 3;
+      }
+      sa_destroy_p2_quantile(q50);
+      sa_destroy_p2_quantile(q95);
     }
     break;
-  case 1:
+  case 2:
     lua_createtable(lua, mp_len, 0);
     for (int i = 0; i < mp_len; ++i) {
       lua_pushnumber(lua, mp[i]);
@@ -400,7 +413,7 @@ static int ts_mp_int(lua_State *lua)
     }
     rv = 1;
     break;
-  case 2:
+  case 3:
     lua_createtable(lua, mp_len, 0);
     for (int i = 0; i < mp_len; ++i) {
       lua_pushinteger(lua, (lua_Integer)mpi[i]);

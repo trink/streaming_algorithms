@@ -15,8 +15,9 @@ local function output_menu(output_dir, version)
 ## Lua Bindings
 
 * [Count-min Sketch](lua_cm_sketch.md)
-* [Running Stats](lua_running_stats.md)
 * [Piecewise Parabolic Prediction (P2)](lua_p2.md)
+* [Running Stats](lua_running_stats.md)
+* [Time Series](lua_time_series.md)
 ]])
     fh:close()
 end

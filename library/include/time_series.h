@@ -61,7 +61,7 @@ sa_add_time_series_int(sa_time_series_int *ts, uint64_t ns, int v);
  *
  */
 int
-sa_set_time_series_int(sa_time_series_int *time_series_int, uint64_t ns, int v);
+sa_set_time_series_int(sa_time_series_int *ts, uint64_t ns, int v);
 
 /**
  * Gets the value of the time series row.
@@ -73,7 +73,7 @@ sa_set_time_series_int(sa_time_series_int *time_series_int, uint64_t ns, int v);
  *
  */
 int
-sa_get_time_series_int(sa_time_series_int *time_series_int, uint64_t ns);
+sa_get_time_series_int(sa_time_series_int *ts, uint64_t ns);
 
 /**
  * Returns the timestamp of the most recent row.
@@ -91,8 +91,8 @@ uint64_t sa_timestamp_time_series_int(sa_time_series_int *ts);
  *
  * @param ts Pointer to time_series_int
  * @param ns The start of the interval to analyze
- * @param n Sequence length
- * @param m Sub-sequence length
+ * @param n Sequence length (<= ts->rows)
+ * @param m Sub-sequence length (n / 4 >= m > 3)
  * @param percent Percentage of data to base the calculation on (0.0 <
  *                percent <= 100). Use less than 100 to produce an estimate
  *                of the matrix profile trading accuracy for speed.

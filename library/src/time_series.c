@@ -274,7 +274,7 @@ int sa_mp_time_series_int(sa_time_series_int *ts,
 {
   int idx = find_index_int(ts, ns, false);
   if (idx == -1 || n > ts->rows || percent <= 0 || percent > 100
-      || m < 4 || n < 4 * m || n % m != 0) {
+      || m < 4 || n / 4 < m) {
     return 0;
   }
 

@@ -201,6 +201,7 @@ local errors = {
     function() local cb = time_series.new(1, 1) end, -- new() 1 row
     function() local cb = time_series.new(2, nil) end, -- new() non numeric seconds_per_row
     function() local cb = time_series.new(2, 0) end, -- new() zero seconds_per_row
+    function() local cb = time_series.new(2, 360e9 * 360e9) end, -- out of range seconds_per_row
     function() local cb = time_series.new(2, 1) -- set() non numeric time
     cb:set(nil, 1) end,
     function() local cb = time_series.new(2, 1) -- get() invalid object
@@ -298,11 +299,15 @@ local tests = {
         for i,v in ipairs(data) do
             cb:add(i - 1, v)
         end
-        local ats, avg, sd, tdd = cb:matrix_profile(nil, 16, 4, 100)
-        assert(ats == 3, ats)
-        assert(math.abs(avg - 1.070455) < .000001, avg)
-        assert(math.abs(sd - 0.634018) < .000001, sd)
-        assert(math.abs(tdd - 2.238618) < .000001, tdd)
+        local ts, rp, dist = cb:matrix_profile(nil, 16, 4, 100)
+        assert(ts == 3, ts)
+        assert(math.abs(rp - 68.356354) < .000001, rp)
+        assert(math.abs(dist - 1.078937) < .000001, dist)
+
+        local ts, rp, dist = cb:matrix_profile(nil, 16, 4, 100, "anomaly_current")
+        assert(ts == 12, ts)
+        assert(rp ~= rp, rp)
+        assert(dist ~= dist, dist)
 
         local mp = cb:matrix_profile(nil, 16, 4, 100, "mp")
         local mp_len = #mp
@@ -324,11 +329,9 @@ local tests = {
         end,
     function()
         local cb = time_series.new(17, 1)
-        local ats, avg, sd, tdd = cb:matrix_profile(nil, 16, 4, 100)
-        assert(ats == 0, ats)
-        assert(avg == 0, avg)
-        assert(sd == 0, sd)
-        assert(tdd == 1/0, tdd)
+        local ts, rp = cb:matrix_profile(nil, 16, 4, 100)
+        assert(not ts, ts)
+        assert(not rp, rp)
         end,
     function()
         local cb = time_series.new(6, 1)
