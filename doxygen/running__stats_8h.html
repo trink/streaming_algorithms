@@ -24,7 +24,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">streaming_algorithms
-   &#160;<span id="projectnumber">0.0.2</span>
+   &#160;<span id="projectnumber">0.0.3</span>
    </div>
    <div id="projectbrief">A collection of streaming data algorithms</div>
   </td>
@@ -102,6 +102,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 Include dependency graph for running_stats.h:</div>
 <div class="dyncontent">
 <div class="center"><img src="running__stats_8h__incl.png" border="0" usemap="#include_2running__stats_8h" alt=""/></div>
+<map name="include_2running__stats_8h" id="include_2running__stats_8h">
+</map>
 </div>
 </div>
 <p><a href="running__stats_8h_source.html">Go to the source code of this file.</a></p>
@@ -128,8 +130,11 @@ Functions</h2></td></tr>
 <tr class="memdesc:a0ab4d9e7f41d052c887709d07deb1a04"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the variance of the stats.  <a href="#a0ab4d9e7f41d052c887709d07deb1a04">More...</a><br /></td></tr>
 <tr class="separator:a0ab4d9e7f41d052c887709d07deb1a04"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35fdd6d152af0ace96fee7dd279be1e6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="running__stats_8h.html#a35fdd6d152af0ace96fee7dd279be1e6">sa_sd_running_stats</a> (<a class="el" href="structsa__running__stats.html">sa_running_stats</a> *s)</td></tr>
-<tr class="memdesc:a35fdd6d152af0ace96fee7dd279be1e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the standard deviation of the stats.  <a href="#a35fdd6d152af0ace96fee7dd279be1e6">More...</a><br /></td></tr>
+<tr class="memdesc:a35fdd6d152af0ace96fee7dd279be1e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the corrected sample standard deviation of the stats.  <a href="#a35fdd6d152af0ace96fee7dd279be1e6">More...</a><br /></td></tr>
 <tr class="separator:a35fdd6d152af0ace96fee7dd279be1e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1390f25df9fcc27be92a1541e795b5b9"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="running__stats_8h.html#a1390f25df9fcc27be92a1541e795b5b9">sa_usd_running_stats</a> (<a class="el" href="structsa__running__stats.html">sa_running_stats</a> *s)</td></tr>
+<tr class="memdesc:a1390f25df9fcc27be92a1541e795b5b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the uncorrected sample standard deviation of the stats.  <a href="#a1390f25df9fcc27be92a1541e795b5b9">More...</a><br /></td></tr>
+<tr class="separator:a1390f25df9fcc27be92a1541e795b5b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7eec5d9a76731158a0d050dfdf36f04a"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="running__stats_8h.html#a7eec5d9a76731158a0d050dfdf36f04a">sa_serialize_running_stats</a> (<a class="el" href="structsa__running__stats.html">sa_running_stats</a> *s, size_t *len)</td></tr>
 <tr class="memdesc:a7eec5d9a76731158a0d050dfdf36f04a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize the internal state to a buffer.  <a href="#a7eec5d9a76731158a0d050dfdf36f04a">More...</a><br /></td></tr>
 <tr class="separator:a7eec5d9a76731158a0d050dfdf36f04a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -271,7 +276,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Returns the standard deviation of the stats. </p>
+<p>Returns the corrected sample standard deviation of the stats. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">s</td><td>Stat structure</td></tr>
@@ -315,6 +320,31 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>char* Serialized representation MUST be freed by the caller </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a1390f25df9fcc27be92a1541e795b5b9"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double sa_usd_running_stats </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structsa__running__stats.html">sa_running_stats</a> *&#160;</td>
+          <td class="paramname"><em>s</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the uncorrected sample standard deviation of the stats. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">s</td><td>Stat structure</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>double Uncorrected standard deviation of the stats up to this point </dd></dl>
 
 </div>
 </div>

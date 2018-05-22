@@ -1,0 +1,601 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <title>Time Series · GitBook</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="GitBook 3.2.2">
+        
+        
+        
+    
+    <link rel="stylesheet" href="gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-navigator/plugin.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="lua_binding/luasandbox/sandboxes/" />
+    
+    
+    <link rel="prev" href="lua_running_stats.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="./">
+            
+                <a href="./">
+            
+                    
+                    Streaming Algorithms (0.0.3)
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" >
+            
+                <a target="_blank" href="https://trink.github.io/streaming_algorithms/doxygen/index.html">
+            
+                    
+                    Library Documentation
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Lua Bindings</li>
+        
+        
+    
+        <li class="chapter " data-level="2.1" data-path="lua_cm_sketch.html">
+            
+                <a href="lua_cm_sketch.html">
+            
+                    
+                    Count-min Sketch
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.2" data-path="lua_p2.html">
+            
+                <a href="lua_p2.html">
+            
+                    
+                    Piecewise Parabolic Prediction (P2)
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="2.3" data-path="lua_running_stats.html">
+            
+                <a href="lua_running_stats.html">
+            
+                    
+                    Running Stats
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="2.4" data-path="lua_time_series.html">
+            
+                <a href="lua_time_series.html">
+            
+                    
+                    Time Series
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Lua Sandbox Extensions</li>
+        
+        
+    
+        <li class="chapter " data-level="3.1" data-path="lua_binding/luasandbox/sandboxes/">
+            
+                <a href="lua_binding/luasandbox/sandboxes/">
+            
+                    
+                    sandboxes
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="3.1.1" data-path="lua_binding/luasandbox/sandboxes/heka/">
+            
+                <a href="lua_binding/luasandbox/sandboxes/heka/">
+            
+                    
+                    heka
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="3.1.1.1" data-path="lua_binding/luasandbox/sandboxes/heka/analysis/">
+            
+                <a href="lua_binding/luasandbox/sandboxes/heka/analysis/">
+            
+                    
+                    analysis
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="3.1.1.1.1" data-path="lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.html">
+            
+                <a href="lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.html">
+            
+                    
+                    heka_message_monitor
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://www.gitbook.com" target="blank" class="gitbook-link">
+            Published with GitBook
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href="." >Time Series</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="Lua_Time_Series_Module">Lua Time Series Module</h1>
+<h2 id="Overview">1. Overview</h2>
+<p>A circular buffer library for an in-memory sliding window time series data
+store.</p>
+<h2 id="Module">2. Module</h2>
+<h3 id="Example_Usage">2.1. Example Usage</h3>
+<pre><code class="lang-lua"><span class="hljs-keyword">local</span> sats = <span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.time_series&quot;</span>
+
+<span class="hljs-keyword">local</span> ts = sats.new(<span class="hljs-number">1440</span>, <span class="hljs-number">60e9</span>)
+ts:add(<span class="hljs-number">1e9</span>, <span class="hljs-number">1</span>)
+ts:add(<span class="hljs-number">1e9</span>, <span class="hljs-number">7</span>)
+<span class="hljs-keyword">local</span> val = ts:get(<span class="hljs-number">1e9</span>)
+<span class="hljs-comment">-- val == 8</span>
+</code></pre>
+<h3 id="Functions">2.2. Functions</h3>
+<h4 id="new">2.2.1. new</h4>
+<pre><code class="lang-lua"><span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.time_series&quot;</span>
+<span class="hljs-keyword">local</span> ts = streaming_algorithms.time_series.new(<span class="hljs-number">1440</span>, <span class="hljs-number">60e9</span>)
+</code></pre>
+<p>Import the <em>time_series</em> via the Lua &apos;require&apos; function. The module is globally
+registered and returned by the require function.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>rows (unsigned) The number of rows in the buffer (must be &gt; 1).</li>
+<li>ns_per_row (unsigned) The number of nanoseconds each row represents
+(must be &gt; 0).</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>time_series userdata object.</li>
+</ul>
+<h3 id="Methods">2.3. Methods</h3>
+<h4 id="get_configuration">2.3.1. get_configuration</h4>
+<pre><code class="lang-lua"><span class="hljs-keyword">local</span> rows, ns_per_row = ts:get_configuration()
+</code></pre>
+<p>Returns the configuration of the time series structure.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>none
+-
+<em>Return</em></li>
+<li>rows (unsigned) The number of rows in the buffer.</li>
+<li>ns_per_row (unsigned) The number of nanoseconds each row represents.</li>
+</ul>
+<h4 id="add">2.3.2. add</h4>
+<pre><code class="lang-lua">v = ts:add(<span class="hljs-number">1e9</span>, <span class="hljs-number">1</span>)
+<span class="hljs-comment">-- v == 1</span>
+v = ts:add(<span class="hljs-number">1e9</span>, <span class="hljs-number">99</span>)
+<span class="hljs-comment">-- v == 100</span>
+</code></pre>
+<p>Adds a value to the specified row in the time series.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>nanosecond (unsigned) The number of nanosecond since the UNIX epoch. The value
+is used to determine which row is being operated on.</li>
+<li>value (number) The value to be added to the specified row/column.</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>The value of the updated row or nil if the time was outside the range
+of the window.</li>
+</ul>
+<h4 id="set">2.3.3. set</h4>
+<pre><code class="lang-lua">v = ts:set(<span class="hljs-number">1e9</span>, <span class="hljs-number">1</span>)
+<span class="hljs-comment">-- v == 1</span>
+v = ts:set(<span class="hljs-number">1e9</span>, <span class="hljs-number">99</span>)
+<span class="hljs-comment">-- v == 99</span>
+</code></pre>
+<p>Overwrites the value at a specific row in the time series.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>nanosecond (unsigned) The number of nanosecond since the UNIX epoch. The value
+is used to determine which row is being operated on.</li>
+<li>value (number) The value to be overwritten at the specified row.</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>The resulting value of the row or nil if the time was outside the range
+of the window.</li>
+</ul>
+<h4 id="merge">2.3.4. merge</h4>
+<pre><code class="lang-lua">ts:merge(ts1, op)
+</code></pre>
+<p>Merges one time series into another based on the specified operation. The
+resolution of time series being merged must be smaller or equal to the
+destination resolution.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>ts1 (userdata) Time series userdata to merge.</li>
+<li>op (string/nil) One of the following entries:<ul>
+<li>add (default)</li>
+<li>set</li>
+</ul>
+</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>none</li>
+</ul>
+<h4 id="get">2.3.5. get</h4>
+<pre><code class="lang-lua">v = ts:get(<span class="hljs-number">1e9</span>)
+<span class="hljs-comment">-- v == 99</span>
+</code></pre>
+<p>Fetches the value at a specific row in the time series.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>nanosecond (unsigned) The number of nanosecond since the UNIX epoch. The value
+is used to determine which row is being operated on.</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>The value at the specifed row or nil if the time was outside the range
+of the window.</li>
+</ul>
+<h4 id="get_range">2.3.6. get_range</h4>
+<pre><code class="lang-lua">a = ts:get_range(<span class="hljs-keyword">nil</span>, <span class="hljs-number">2</span>)
+<span class="hljs-comment">-- a == {98, 99}</span>
+</code></pre>
+<p>Returns an array of values spanning the specified range.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>nanoseconds (unsigned/nil) The start of the interval to return, nil starts
+from the beginning.</li>
+<li>sequence_length (unsigned) Time series length (&lt;= rows).</li>
+</ul>
+<p><em>Returns</em></p>
+<ul>
+<li>Array of values or nil if the range fell outside of the buffer.</li>
+</ul>
+<h4 id="current_time">2.3.7. current_time</h4>
+<pre><code class="lang-lua">t = ts:current_time()
+<span class="hljs-comment">-- t == 86340000000000</span>
+</code></pre>
+<p>Returns the timestamp of the newest row.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>none</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>The time of the most current row in the time series (nanoseconds).</li>
+</ul>
+<h4 id="stats">2.3.8. stats</h4>
+<pre><code class="lang-lua">sum, cnt = ts:stats(<span class="hljs-keyword">nil</span>, <span class="hljs-number">10</span>, <span class="hljs-string">&quot;sum&quot;</span>)
+<span class="hljs-comment">-- sum == 23, cnt = 10</span>
+</code></pre>
+<p>Returns the requested type of stats specified range.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>nanoseconds (unsigned/nil) The start of the interval to return, nil starts
+from the beginning.</li>
+<li>sequence_length (unsigned) Time series length (&lt;= rows).</li>
+<li>type (string/nil) One of the following entries:<ul>
+<li>sum (default)</li>
+<li>min</li>
+<li>max</li>
+<li>avg</li>
+<li>sd    - corrected standard deviation</li>
+<li>usd   - uncorrected standard deviation</li>
+</ul>
+</li>
+<li>include_zero (bool/nil) - Treat a zero value as a value instead of unitialized
+(default: false, integer time series only).</li>
+</ul>
+<p><em>Returns</em></p>
+<ul>
+<li>stat (number) Resulting <code>type</code> output</li>
+<li>rows (number) Number of rows used in the computation.</li>
+</ul>
+<h4 id="matrix_profile">2.3.9. matrix_profile</h4>
+<pre><code class="lang-lua"><span class="hljs-keyword">local</span> ts, rp, dist = ts:matrix_profile(<span class="hljs-keyword">nil</span>, <span class="hljs-number">16</span>, <span class="hljs-number">4</span>, <span class="hljs-number">100</span>, <span class="hljs-string">&quot;anomaly&quot;</span>)
+<span class="hljs-comment">-- ts == 1525465122000000000</span>
+<span class="hljs-comment">-- rp == 35.762825</span>
+<span class="hljs-comment">-- dist == 1.078937</span>
+
+<span class="hljs-keyword">local</span> mp = ts:matrix_profile(<span class="hljs-number">1e9</span>, <span class="hljs-number">120</span>, <span class="hljs-number">10</span>, <span class="hljs-number">1.0</span>, <span class="hljs-string">&quot;mp&quot;</span>)
+<span class="hljs-comment">-- mp == {1.5010956572519172, 1.7133271671869412, ... }</span>
+
+<span class="hljs-keyword">local</span> mpi = ts:matrix_profile(<span class="hljs-number">1e9</span>, <span class="hljs-number">120</span>, <span class="hljs-number">10</span>, <span class="hljs-number">1.0</span>, <span class="hljs-string">&quot;mpi&quot;</span>)
+<span class="hljs-comment">-- mpi == {7, 4, ... }</span>
+</code></pre>
+<p>Returns the requested information from the
+<a href="http://www.cs.ucr.edu/~eamonn/MatrixProfile.html" target="_blank">matrix profile</a> calculation.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>nanoseconds (unsigned/nil) The start of the interval to analyze, nil starts
+from the beginning.</li>
+<li>sequence_length (unsigned) Time series length (&lt;= rows).</li>
+<li>subsequence_length (unsigned) (sequence_length / 4 &gt;= subsequence_length &gt; 3).</li>
+<li>percent (number) Percentage of data to base the calculation on
+(0.0 &lt; percent &lt;= 100). Use less than 100 to produce an estimate of the
+matrix profile trading accuracy for speed.</li>
+<li>result (string/nil) One of the following (anomaly|anomaly_current|mp|mpi)<ul>
+<li><code>anomaly</code> (default) Returns the timestamp, the percentage of the range
+represented by the top 5% of discords and the distance between the top discord
+and the median.</li>
+<li><code>anomaly_current</code> Same as <code>anomaly</code> but only over the last
+<code>subsequence_length</code> of matrix profiles.</li>
+<li><code>mp</code> Returns the matrix profile array.</li>
+<li><code>mpi</code> Returns the matrix profile index array.</li>
+</ul>
+</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>The specified result described above, nil (out of range) or throws an error.</li>
+</ul>
+<h4 id="fromstring">2.3.10. fromstring</h4>
+<pre><code class="lang-lua">ts:fromstring(<span class="hljs-built_in">tostring</span>(ts1))
+</code></pre>
+<p>Restores the time series to the previously serialized state.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>serialization (string) The tostring output.</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>none or throws an error.</li>
+</ul>
+<div id="anchors-navbar"><i class="fa fa-anchor"></i><ul><p><a href="#Lua_Time_Series_Module">Lua Time Series Module</a></p><li><a href="#Overview">1. Overview</a></li><li><a href="#Module">2. Module</a></li><ul><li><a href="#Example_Usage">2.1. Example Usage</a></li><li><a href="#Functions">2.2. Functions</a></li><ul><li><a href="#new">2.2.1. new</a></li></ul><li><a href="#Methods">2.3. Methods</a></li><ul><li><a href="#get_configuration">2.3.1. get_configuration</a></li><li><a href="#add">2.3.2. add</a></li><li><a href="#set">2.3.3. set</a></li><li><a href="#merge">2.3.4. merge</a></li><li><a href="#get">2.3.5. get</a></li><li><a href="#get_range">2.3.6. get_range</a></li><li><a href="#current_time">2.3.7. current_time</a></li><li><a href="#stats">2.3.8. stats</a></li><li><a href="#matrix_profile">2.3.9. matrix_profile</a></li><li><a href="#fromstring">2.3.10. fromstring</a></li></ul></ul></ul></div><a href="#Overview" id="goTop"><i class="fa fa-arrow-up"></i></a>
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="lua_running_stats.html" class="navigation navigation-prev " aria-label="Previous page: Running Stats">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="lua_binding/luasandbox/sandboxes/" class="navigation navigation-next " aria-label="Next page: sandboxes">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Time Series","level":"2.4","depth":1,"next":{"title":"sandboxes","level":"3.1","depth":1,"path":"lua_binding/luasandbox/sandboxes/README.md","ref":"lua_binding/luasandbox/sandboxes/README.md","articles":[{"title":"heka","level":"3.1.1","depth":2,"path":"lua_binding/luasandbox/sandboxes/heka/README.md","ref":"lua_binding/luasandbox/sandboxes/heka/README.md","articles":[{"title":"analysis","level":"3.1.1.1","depth":3,"path":"lua_binding/luasandbox/sandboxes/heka/analysis/README.md","ref":"lua_binding/luasandbox/sandboxes/heka/analysis/README.md","articles":[{"title":"heka_message_monitor","level":"3.1.1.1.1","depth":4,"path":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.md","ref":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.md","articles":[]}]}]}]},"previous":{"title":"Running Stats","level":"2.3","depth":1,"path":"lua_running_stats.md","ref":"lua_running_stats.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"lua_time_series.md","mtime":"2018-05-22T20:44:10.709Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-05-22T20:47:06.801Z"},"basePath":".","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <script src="gitbook/gitbook.js"></script>
+    <script src="gitbook/theme.js"></script>
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-sharing/buttons.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

@@ -61,10 +61,10 @@
     <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
 
     
-    <link rel="next" href="lua_p2.html" />
+    <link rel="next" href="lua_time_series.html" />
     
     
-    <link rel="prev" href="lua_cm_sketch.html" />
+    <link rel="prev" href="lua_p2.html" />
     
 
     </head>
@@ -98,7 +98,7 @@
                 <a href="./">
             
                     
-                    Streaming Algorithms (0.0.2)
+                    Streaming Algorithms (0.0.3)
             
                 </a>
             
@@ -139,7 +139,20 @@
             
         </li>
     
-        <li class="chapter active" data-level="2.2" data-path="lua_running_stats.html">
+        <li class="chapter " data-level="2.2" data-path="lua_p2.html">
+            
+                <a href="lua_p2.html">
+            
+                    
+                    Piecewise Parabolic Prediction (P2)
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="2.3" data-path="lua_running_stats.html">
             
                 <a href="lua_running_stats.html">
             
@@ -152,16 +165,93 @@
             
         </li>
     
-        <li class="chapter " data-level="2.3" data-path="lua_p2.html">
+        <li class="chapter " data-level="2.4" data-path="lua_time_series.html">
             
-                <a href="lua_p2.html">
+                <a href="lua_time_series.html">
             
                     
-                    Piecewise Parabolic Prediction (P2)
+                    Time Series
             
                 </a>
             
 
+            
+        </li>
+    
+
+    
+        
+        <li class="header">Lua Sandbox Extensions</li>
+        
+        
+    
+        <li class="chapter " data-level="3.1" data-path="lua_binding/luasandbox/sandboxes/">
+            
+                <a href="lua_binding/luasandbox/sandboxes/">
+            
+                    
+                    sandboxes
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="3.1.1" data-path="lua_binding/luasandbox/sandboxes/heka/">
+            
+                <a href="lua_binding/luasandbox/sandboxes/heka/">
+            
+                    
+                    heka
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="3.1.1.1" data-path="lua_binding/luasandbox/sandboxes/heka/analysis/">
+            
+                <a href="lua_binding/luasandbox/sandboxes/heka/analysis/">
+            
+                    
+                    analysis
+            
+                </a>
+            
+
+            
+            <ul class="articles">
+                
+    
+        <li class="chapter " data-level="3.1.1.1.1" data-path="lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.html">
+            
+                <a href="lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.html">
+            
+                    
+                    heka_message_monitor
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+            </ul>
+            
+        </li>
+    
+
+            </ul>
             
         </li>
     
@@ -302,7 +392,7 @@ is globally registered and returned by the require function.</p>
 <h4 id="sd">3.2.6. sd</h4>
 <pre><code class="lang-lua"><span class="hljs-keyword">local</span> sd = stat:sd()
 </code></pre>
-<p>Returns the current standard deviation.</p>
+<p>Returns the current corrected sample standard deviation.</p>
 <p><em>Arguments</em></p>
 <ul>
 <li>none</li>
@@ -311,7 +401,19 @@ is globally registered and returned by the require function.</p>
 <ul>
 <li>sd (number)</li>
 </ul>
-<h4 id="variance">3.2.7. variance</h4>
+<h4 id="usd">3.2.7. usd</h4>
+<pre><code class="lang-lua"><span class="hljs-keyword">local</span> sd = stat:usd()
+</code></pre>
+<p>Returns the current uncorrected sample standard deviation.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>none</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>sd (number)</li>
+</ul>
+<h4 id="variance">3.2.8. variance</h4>
 <pre><code class="lang-lua"><span class="hljs-keyword">local</span> variance = stat:variance()
 </code></pre>
 <p>Returns the current variance.</p>
@@ -323,7 +425,7 @@ is globally registered and returned by the require function.</p>
 <ul>
 <li>variance (number)</li>
 </ul>
-<div id="anchors-navbar"><i class="fa fa-anchor"></i><ul><p><a href="#Lua_Running_Stats_Module">Lua Running Stats Module</a></p><li><a href="#Overview">1. Overview</a></li><li><a href="#Example_Usage">2. Example Usage</a></li><li><a href="#Module">3. Module</a></li><ul><li><a href="#Functions">3.1. Functions</a></li><ul><li><a href="#new">3.1.1. new</a></li></ul><li><a href="#Methods">3.2. Methods</a></li><ul><li><a href="#add">3.2.1. add</a></li><li><a href="#avg">3.2.2. avg</a></li><li><a href="#clear">3.2.3. clear</a></li><li><a href="#count">3.2.4. count</a></li><li><a href="#fromstring">3.2.5. fromstring</a></li><li><a href="#sd">3.2.6. sd</a></li><li><a href="#variance">3.2.7. variance</a></li></ul></ul></ul></div><a href="#Overview" id="goTop"><i class="fa fa-arrow-up"></i></a>
+<div id="anchors-navbar"><i class="fa fa-anchor"></i><ul><p><a href="#Lua_Running_Stats_Module">Lua Running Stats Module</a></p><li><a href="#Overview">1. Overview</a></li><li><a href="#Example_Usage">2. Example Usage</a></li><li><a href="#Module">3. Module</a></li><ul><li><a href="#Functions">3.1. Functions</a></li><ul><li><a href="#new">3.1.1. new</a></li></ul><li><a href="#Methods">3.2. Methods</a></li><ul><li><a href="#add">3.2.1. add</a></li><li><a href="#avg">3.2.2. avg</a></li><li><a href="#clear">3.2.3. clear</a></li><li><a href="#count">3.2.4. count</a></li><li><a href="#fromstring">3.2.5. fromstring</a></li><li><a href="#sd">3.2.6. sd</a></li><li><a href="#usd">3.2.7. usd</a></li><li><a href="#variance">3.2.8. variance</a></li></ul></ul></ul></div><a href="#Overview" id="goTop"><i class="fa fa-arrow-up"></i></a>
                                 
                                 </section>
                             
@@ -350,12 +452,12 @@ is globally registered and returned by the require function.</p>
 
             
                 
-                <a href="lua_cm_sketch.html" class="navigation navigation-prev " aria-label="Previous page: Count-min Sketch">
+                <a href="lua_p2.html" class="navigation navigation-prev " aria-label="Previous page: Piecewise Parabolic Prediction (P2)">
                     <i class="fa fa-angle-left"></i>
                 </a>
                 
                 
-                <a href="lua_p2.html" class="navigation navigation-next " aria-label="Next page: Piecewise Parabolic Prediction (P2)">
+                <a href="lua_time_series.html" class="navigation navigation-next " aria-label="Next page: Time Series">
                     <i class="fa fa-angle-right"></i>
                 </a>
                 
@@ -366,7 +468,7 @@ is globally registered and returned by the require function.</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Running Stats","level":"2.2","depth":1,"next":{"title":"Piecewise Parabolic Prediction (P2)","level":"2.3","depth":1,"path":"lua_p2.md","ref":"lua_p2.md","articles":[]},"previous":{"title":"Count-min Sketch","level":"2.1","depth":1,"path":"lua_cm_sketch.md","ref":"lua_cm_sketch.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"lua_running_stats.md","mtime":"2017-09-19T22:15:18.011Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-02-02T03:49:37.698Z"},"basePath":".","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Running Stats","level":"2.3","depth":1,"next":{"title":"Time Series","level":"2.4","depth":1,"path":"lua_time_series.md","ref":"lua_time_series.md","articles":[]},"previous":{"title":"Piecewise Parabolic Prediction (P2)","level":"2.2","depth":1,"path":"lua_p2.md","ref":"lua_p2.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"lua_running_stats.md","mtime":"2018-05-22T20:44:10.709Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-05-22T20:47:06.801Z"},"basePath":".","book":{"language":""}});
         });
     </script>
 </div>
