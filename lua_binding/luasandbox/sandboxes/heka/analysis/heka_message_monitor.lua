@@ -5,9 +5,9 @@
 --[[
 # Heka Message Monitor
 
-Generates documentation for each unique message in a data stream based on the
-specified hierarchy. This schema is used for automated monitoring of all message
-attributes for any change in behavior.
+Analyzes each unique message in a data stream based on the specified hierarchy.
+This schema is used for automated monitoring of all message attributes for any
+change in behavior.
 
 ## Sample Configuration
 
@@ -24,9 +24,9 @@ time_series_resolution = 360 -- seconds default (6 minutes)
 time_series_sample_length = 10 -- default used to determine if a attribute has non sparse data
 
 mp_window = 240 -- default (1 day)
-mp_percent_data = 10 -- default
+mp_percent_data = 10 -- default (used for an estimate, if an alert would be trigger the exact value is verified)
 
-exclude = nil -- default table of field names to exclude from monitoring/analyis e.g. `{"EnvVersion", "Fields[Date]"}`
+exclude = nil -- default table of field names to exclude from monitoring/analyis e.g. `{"Pid", "Fields[Date]"}`
 
 alert = {
   disabled = false,
@@ -37,52 +37,22 @@ alert = {
   },
   thresholds = {
     mp_percent = 50, -- default percentage of matrix profile range the top 5% of discords must cover before alerting (max - median)
-    mp_mindist = 5, -- default minimum distance change before alerting
+    mp_mindist = 10, -- default minimum distance change before alerting (max - median)
+    mp_suppress = false, -- suppress alerts until the matrix profile has been active for time_series_length
   }
 }
 
 ```
 
-## Sample Output
-```
-# Fields[normalizedChannel]
-# The number in brackets is the number of messages occuring at each level of the hierarchy.
-Other [738]
-  Logger // subtype: set [1]
-    telemetry [738]
-
-  Type // subtype: set [2]
-    telemetry [727]
-    telemetry.error [11]
-
-  Pid // subtype: set [2]
-    2615 [138]
-    2623 [135]
-
-  Hostname // subtype: set [2]
-    ip-172-31-10-108 [261]
-    ip-172-31-30-139 [249]
-
-  Severity - optional [0] // subtype: unknown
-  Payload - optional [0] // subtype: unique min:inf max:-inf
-  EnvVersion - optional [0] // subtype: unknown
-  -Fields-
-    payload.childPayloads (binary (json) - optional [80]) // subtype: unique min:137 max:1835
-    sourceVersion (mismatch - optional [727]) // subtype: set [4]
-      8 [398]
-      4 [181]
-      9 [135]
-      7 [13]
-```
-
 ## Analysis Behavior (based on subtype)
 - `unknown` - no analysis
-- `unique`  - no matrix profile analysis (just min/max lengths)
-- `range`   - no matrix profile analysis (just min/max values)
-- `set`     - counts of each item are analyzed
+- `unique`  - min/max lengths
+- `range`   - min/max values
+- `set`     - matrix profile analysis for frequency of each item
 - `sparse`  - weights of each of the most frequent items are computed
 --]]
 _PRESERVATION_VERSION = read_config("preservation_version") or 0
+schema = {}
 
 require "math"
 require "os"
@@ -90,11 +60,6 @@ require "string"
 require "table"
 local alert = require "heka.alert"
 local sats  = require "streaming_algorithms.time_series"
-
-schema = {}
-report = {}
-report_size = 0
-day = math.floor(os.time() / 86400)
 
 local time_series_length        = read_config("time_series_length") or 240 * 8 + 10
 local time_series_resolution    = read_config("time_series_resolution") or 360
@@ -106,13 +71,12 @@ local mp_window         = read_config("mp_window") or 240
 local mp_percent_data   = read_config("mp_percent_data") or 10
 local max_set_size      = read_config("max_set_size") or 255
 local hierarchy         = read_config("hierarchy") or {"Logger", "Type", "EnvVersion"}
+local levels            = #hierarchy - 1
+local leaf              = hierarchy[levels + 1];
 
 local alert_mp_percent  = alert.get_threshold("mp_percent") or 50
-local alert_mp_mindist  = alert.get_threshold("mp_mindist") or 5
-
-local levels    = #hierarchy - 1
-local leaf      = hierarchy[levels + 1];
-local path      = {}
+local alert_mp_mindist  = alert.get_threshold("mp_mindist") or 10
+local alert_mp_suppress = alert.get_threshold("mp_suppress")
 
 local exclude = read_config("exclude") or {}
 local exclude_headers
@@ -128,36 +92,6 @@ for i,v in ipairs(exclude) do
     end
 end
 exclude = nil
-
-local dygraphs_entry = [[
-<h1>%s</h1>
-<div id="raw%d" style="height: 200px; width: 100%%;"</div>
-<script type="text/javascript">
-  gr%d = new Dygraph(document.getElementById("raw%d"), "Date,raw\n" + "%s");
-</script>
-<div id="mp%d" style="height: 100px; width: 100%%;"</div>
-<script type="text/javascript">
-  gm%d = new Dygraph(document.getElementById("mp%d"), "Date,mp\n" + "%s");
-</script>
-]]
-
-local alerts = {}
-local function debug_graph(ts, key)
-    local idx = #alerts + 1
-    if idx > 50 then return end
-
-    local rows, ns_per_row = ts:get_configuration()
-    local st = ts:current_time() - (rows * ns_per_row - 1)
-    local raw = ts:get_range(nil,  time_series_length - 1)
-    local mp = ts:matrix_profile(nil, time_series_length - 1, mp_window, mp_percent_data, "mp")
-    local dgraw = {}
-    local dgmp = {}
-    for i,v in ipairs(raw) do
-        dgraw[i] = string.format("%s,%d\\n", os.date("%Y/%m/%d %H:%M:%S", (st + i * ns_per_row)/1e9), v)
-        dgmp[i] = string.format("%s,%g\\n", os.date("%Y/%m/%d %H:%M:%S", (st + i * ns_per_row)/1e9), mp[i] or 0) -- fill with zero to keep the graphs aligned
-    end
-    alerts[idx] = string.format(dygraphs_entry, key, idx, idx, idx, table.concat(dgraw), idx, idx, idx, table.concat(dgmp));
-end
 
 
 local function get_type(t)
@@ -232,117 +166,178 @@ local function get_table(t, key)
 end
 
 
-function order_by_value(t, f)
-    local a = {}
-    for k, v in pairs(t) do table.insert(a, {k, v}) end
-    table.sort(a, f)
-    local i = 0
-    local iter = function ()
-        i = i + 1
-        if a[i] == nil then
-            return nil
-        else
-            return a[i][1], a[i][2]
-        end
-    end
-    return iter
+local function escape_json(s)
+    return string.gsub(tostring(s), '[\\"/\b\t\n\f\r]', {["\\"] = "\\\\",
+        ['"'] = '\\"', ["/"] = "\\/", ["\b"] = "\\b", ["\t"] = "\\t",
+        ["\n"] = "\\n", ["\f"] = "\\f", ["\r"] = "\\r"})
 end
 
-local variable_cnt = 0
-local mp_cnt = 0
-local function output_subtype(key, v, indent)
-    add_to_payload(" // subtype: ", v.subtype)
-    if v.subtype == "set" then
-        add_to_payload(" [", v.values_cnt, "]\n")
-        for k, t in order_by_value(v.values, function(a,b) return a[2][1] > b[2][1] end) do
-            variable_cnt = variable_cnt + 1
-            add_to_payload(indent, k, " [", t[1],"]")
-            if t[2] then
-                mp_cnt = mp_cnt + 1
-                local ats, rp, dist = t[2]:matrix_profile(nil, time_series_length - 1,
-                                                        mp_window, mp_percent_data, "anomaly_current")
-                add_to_payload(" rp:", rp, " dist:", dist)
-                if ats then
-                    if rp > alert_mp_percent and dist > alert_mp_mindist then
-                        add_to_payload(" ### ALERT:", os.date("%Y-%m-%d %H:%M:%S", ats/1e9))
-                        debug_graph(t[2], string.format("%s->%s[%s]", table.concat(path, "->"),
-                                                        tostring(key), tostring(k)))
-                    end
-                else
-                    local rows, npr = t[2]:get_configuration()
-                    if os.time() * 1e9 - t[2]:current_time() >= rows * npr then
-                        report[report_size] = string.format(
-                            "%s %s removed empty matrix profile field: %s item: %s",
-                            os.date("%Y/%m/%d %H:%M:%S"), table.concat(path, "->"),
-                            tostring(key), tostring(k))
-                        report_size = report_size + 1
-                        v.values[k] = nil
-                        v.values_cnt = v.values_cnt - 1
-                    end
+
+local dygraphs_entry = [[
+<h1>%s</h1>
+<div id="raw%d" style="height: 200px; width: 100%%;"</div>
+<script type="text/javascript">
+  gr%d = new Dygraph(document.getElementById("raw%d"), "Date,raw\n" + "%s");
+</script>
+<div id="mp%d" style="height: 100px; width: 100%%;"</div>
+<script type="text/javascript">
+  gm%d = new Dygraph(document.getElementById("mp%d"), "Date,mp\n" + "%s");
+</script>
+]]
+
+local function debug_graph(ts, st, title, stats)
+    local raw = ts:get_range(nil, time_series_length - 1)
+    local mp  = ts:matrix_profile(nil, time_series_length - 1, mp_window, 100, "mp") -- todo avoid recalculating it again just to get the array
+    local dgraw = {}
+    local dgmp = {}
+    for i,v in ipairs(raw) do
+        local date = os.date("%Y/%m/%d %H:%M:%S", (st + i * time_series_resolution)/1e9)
+        dgraw[i] = string.format("%s,%d\\n", date, v)
+        dgmp[i]  = string.format("%s,%g\\n", date, mp[i] or 0/0) -- fill with NaN to keep the graphs aligned
+    end
+    local i = stats.alerts_cnt
+    stats.alerts[i] = string.format(dygraphs_entry, title, i, i, i, table.concat(dgraw), i, i, i, table.concat(dgmp));
+end
+
+
+local function compute_mp(ts, created, st, key, ks, stats)
+    stats.mp_cnt = stats.mp_cnt + 1
+    add_to_payload(string.format(',"created":%d', created))
+    local ats, rp, dist = ts:matrix_profile(nil, time_series_length - 1, mp_window, mp_percent_data, "anomaly_current")
+    if ats and rp == rp then
+        if rp > alert_mp_percent and dist > alert_mp_mindist and (created <= st or not alert_mp_suppress) then
+            -- re-check using the exact calculation
+            ats, rp, dist = ts:matrix_profile(nil, time_series_length - 1, mp_window, 100, "anomaly_current")
+            if rp > alert_mp_percent and dist > alert_mp_mindist then
+                if stats.alerts_cnt < 25 then
+                    stats.alerts_cnt = stats.alerts_cnt + 1
+                    add_to_payload(string.format(',"alert":%d', ats))
+                    local title = string.format("%s->%s[%s]", table.concat(stats.path, "->"), tostring(key), ks);
+                    debug_graph(ts, st, title, stats)
                 end
             end
-            add_to_payload("\n")
+        end
+        local full = (stats.ns - created) / time_series_length * time_series_resolution
+        if full > 1 then full = 1 end
+        add_to_payload(string.format(',"rp":%g,"dist":%g,"full":%g', rp, dist, full * 100))
+    end
+end
+
+
+local function output_subtype(key, v, stats)
+    local sep = ""
+    add_to_payload(string.format(',"subtype":"%s"', v.subtype))
+    if v.subtype == "set" then
+        add_to_payload(string.format(',"values_cnt":%d,"values":{', v.values_cnt))
+        for k, t in pairs(v.values) do
+            stats.var_cnt = stats.var_cnt + 1
+            local ks = escape_json(k)
+            add_to_payload(string.format('%s"%s":{"cnt":%d', sep, ks, t[1]))
+            if t[2] then
+                local ct = t[2]:current_time()
+                local st = ct - (time_series_length * time_series_resolution - 1)
+                if not t[3] then -- todo remove after the old data is updated
+                    t[3] = st
+                end
+                if stats.ns - ct < mp_window * time_series_resolution  then
+                    compute_mp(t[2], t[3], st, key, ks, stats)
+                else
+                    local t = v.removed
+                    if not t then
+                        t = {}
+                        v.removed = t
+                    end
+                    t[k] = stats.ns
+                    v.values[k] = nil -- remove inactive matrix profile
+                    v.values_cnt = v.values_cnt - 1
+               end
+            end
+            add_to_payload("}")
+            sep = ","
+        end
+        add_to_payload("}")
+        if v.removed then
+            sep = ""
+            add_to_payload(string.format(',"removed":{'))
+            for k, v in pairs(v.removed) do
+                add_to_payload(string.format('%s"%s":%d', sep, escape_json(k), v))
+                sep = ","
+                if stats.ns - v >=  time_series_length * time_series_resolution then
+                    v.removed[k] = nil
+                end
+            end
+            add_to_payload("}")
         end
     elseif v.subtype == "sparse" then
-        add_to_payload(" [", v.values_cnt, "]\n")
-        for k, w in order_by_value(v.values, function(a,b) return a[2] > b[2] end) do
-            add_to_payload(indent, k, " {", w,"}\n")
+        add_to_payload(string.format(',"values_cnt":%d,"values":{', v.values_cnt))
+        for k, w in pairs(v.values) do
+            local ks = escape_json(k)
+            add_to_payload(string.format('%s"%s":{"weight":%d}', sep, ks, w))
+            sep = ","
         end
+        add_to_payload("}")
     elseif v.subtype == "unique" or v.subtype == "range" then
-        add_to_payload(" min:", v.min, " max:", v.max)
+        if v.min ~= 1/0 then
+            add_to_payload(string.format(',"min":%g,"max":%g', v.min, v.max))
+        end
     end
-    add_to_payload("\n")
 end
 
 
-local function output_headers(t, cnt, indent)
+local function output_headers(t, stats)
+    local sep = ""
+    add_to_payload(string.format('"headers":{'))
     for k, v in pairs(t) do
-        add_to_payload(indent, k)
-        if cnt ~= v.cnt then
-            add_to_payload(" - optional [", v.cnt, "]")
-        end
-        output_subtype(k, v, indent .. "  ")
+        local ks = escape_json(k)
+        add_to_payload(string.format('%s"%s":{"cnt":%d', sep, ks, v.cnt))
+        output_subtype(k, v, stats)
+        add_to_payload("}")
+        sep = ","
     end
+    add_to_payload("},")
 end
 
 
-local function output_fields(t, indent)
-    output_headers(t.headers, t.cnt, indent)
-    add_to_payload(indent, "-Fields-\n")
-    indent = indent .. "  "
-    for k,v in pairs(t.fields) do
+local function output_fields(t, stats)
+    local sep = ""
+    add_to_payload(string.format('"fields":{'))
+    for k,v in pairs(t) do
         if not v.exclude then
-            add_to_payload(indent, k, " (", get_type(v.type))
-            if v.repetition then
-                add_to_payload("[]")
-            end
-            if v.representation then
-                add_to_payload(" (", v.representation, ")")
-            end
-            if t.cnt ~= v.cnt then
-                add_to_payload(" - optional [", v.cnt, "])")
-            else
-                add_to_payload(")")
-            end
-            output_subtype(k, v, indent .. "  ")
+            local ks = escape_json(k)
+            add_to_payload(string.format(
+                '%s"%s":{"cnt":%d,"type":"%s","representation":"%s","array":%s,"optional":%s',
+                sep, ks, v.cnt, get_type(v.type),
+                escape_json(v.representation),
+                tostring(v.repetition == true),
+                tostring(t.cnt ~= v.cnt)))
+            output_subtype(k, v, stats)
+            add_to_payload("}")
+            sep = ","
         end
     end
+    add_to_payload("}")
 end
 
 
-local function output_table(t, clevel, indent)
+local function output_table(t, clevel, stats)
+    local sep = ""
+    add_to_payload(string.format('"%s":{\n', escape_json(hierarchy[clevel + 1])))
     for k,v in pairs(t) do
         if type(v) == "table" then
-            add_to_payload(indent, k, " [", v.cnt, "]\n")
+            local ks = escape_json(k)
+            add_to_payload(string.format('%s"%s":{"cnt":%d,', sep, ks, v.cnt))
             if clevel < levels then
-                path[clevel + 1] = tostring(k)
-                output_table(v, clevel + 1, indent .. "  ")
+                stats.path[clevel + 1] = ks
+                output_table(v, clevel + 1, stats)
             else
-                output_fields(v, indent .. "  ")
+                output_headers(v.headers, stats)
+                output_fields(v.fields, stats)
             end
-            add_to_payload("\n")
+            add_to_payload("}\n\n")
+            sep = ","
         end
     end
+    add_to_payload('}\n')
 end
 
 
@@ -408,20 +403,16 @@ local function process_entry(ns, f, value, entry)
                 sts:add(ns, 1)
                 local sum, rows = sts:stats(nil, time_series_sample_length, "sum")
                 if rows == time_series_sample_length then  -- non sparse data
-                    report[report_size] = string.format(
-                        "%s %s added matrix a profile to field: %s item: %s",
-                        os.date("%Y/%m/%d %H:%M:%S"), table.concat(path, "->"),
-                        tostring(f.name), tostring(value))
-                    report_size = report_size + 1
                     ts = sats.new(time_series_length, time_series_resolution)
                     ts:merge(sts, "set")
                     v[2] = ts
-                    v[3] = nil
+                    v[3] = ns -- creation time of the matrix profile
                 end
             end
         else
             if entry.values_cnt == max_set_size then
                 entry.subtype = "sparse"
+                entry.removed = nil
                 for k,v in pairs(entry.values) do
                     entry.values[k] = v[1];
                 end
@@ -453,11 +444,6 @@ local function process_entry(ns, f, value, entry)
                     else
                         entry.subtype = "unique"
                     end
-                    report[report_size] = string.format(
-                        "%s %s demoted sparse field: %s to %s",
-                        os.date("%Y/%m/%d %H:%M:%S"), table.concat(path, "->"),
-                        tostring(f.name), entry.subtype)
-                    report_size = report_size + 1
                     entry.values = nil
                     entry.values_cnt = nil
                 end
@@ -488,11 +474,9 @@ function process_message()
     local t = schema
     for i = 1, levels do
         local k = read_message(hierarchy[i]) or "NIL"
-        path[i] = tostring(k)
         t = get_table(t, k)
     end
     local k = read_message(leaf) or "NIL"
-    path[levels + 1] = tostring(k)
     local v = get_entry_table(t, k)
 
     local ns = read_message("Timestamp")
@@ -534,14 +518,18 @@ function process_message()
 end
 
 
+local viewer
+local viewer1
 local alert_name = "alerts"
 local alert_ext  = "html"
+local schema_name = "message_schema"
+local schema_ext = "json"
 local dygraphs_template = [[
 <!DOCTYPE html>
 <html>
 <head>
-<script type="text/javascript"
-  src="graphs/js/dygraph-combined.js">
+<meta charset="UTF-8">
+<script type="text/javascript" src="graphs/js/dygraph-combined.js">
 </script>
 </head>
 <body>
@@ -552,26 +540,172 @@ local dygraphs_template = [[
 function timer_event(ns, shutdown)
     if shutdown then return end
 
-    inject_payload("txt", "report", table.concat(report, "\n"))
-    local cday = math.floor(os.time() / 86400)
-    if day ~= cday then
-        report = {}
-        report_size = 0
-        day = cday
+    local stats = {
+        ns          = ns,
+        path        = {},
+        alerts      = {},
+        alerts_cnt  = 0,
+        mp_cnt      = 0,
+        var_cnt     = 0
+    }
+
+    add_to_payload("{\n")
+    output_table(schema, 0, stats)
+    add_to_payload(string.format(',"variable_cnt":%d,\n"mp_cnt":%d\n,\n"hierarchy_levels":%d\n}',
+                                 stats.var_cnt, stats.mp_cnt, levels + 1))
+    inject_payload(schema_ext, schema_name)
+
+    if viewer then
+        report = nil -- todo remove (temporary to wipe any preserved report history)
+        inject_payload("html", "viewer", viewer, alert.get_dashboard_uri(schema_name, schema_ext), viewer1)
+        viewer = nil
+        viewer1 = nil
     end
 
-    variable_cnt = 0
-    mp_cnt = 0
-    add_to_payload("# ", table.concat(hierarchy, " -> "),
-    "\n# The number in brackets is the number of messages occuring at each level of the hierarchy.\n")
-    output_table(schema, 0, "")
-    add_to_payload("\nvariable_cnt:", variable_cnt, " mp_cnt:", mp_cnt, "\n")
-    inject_payload("txt", "message_schema")
-    if alerts[1] then
-        inject_payload(alert_ext, alert_name, string.format(dygraphs_template, table.concat(alerts, "\n")))
+    if stats.alerts_cnt > 0 then
+        inject_payload(alert_ext, alert_name, string.format(dygraphs_template, table.concat(stats.alerts, "\n")))
         -- only one throttled alert for all hierarchys (the graph output contains all the issues)
         alert.send(alert_name, "matrix profile",
         string.format("graphs: %s\n", alert.get_dashboard_uri(alert_name, alert_ext)))
-        alerts = {}
     end
 end
+
+viewer = [[
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.3.1.js">
+</script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js">
+</script>
+<script type="text/javascript">
+function fetch(url, callback) {
+  var req = new XMLHttpRequest();
+  var caller = this;
+  req.onreadystatechange = function() {
+    if (req.readyState == 4) {
+      if (req.status == 200 ||
+        req.status == 0) {
+        callback(JSON.parse(req.responseText));
+      } else {
+        var p = document.createElement('p');
+        p.innerHTML = "data retrieval failed: " + url;
+        document.body.appendChild(p);
+      }
+    }
+  };
+  req.open("GET", url, true);
+  req.send(null);
+}
+
+function get_datestring(ns) {
+  var d = new Date(ns / 1000000);
+  var ds = d.getFullYear() + "/"
+    + ("0" + (d.getMonth() + 1)).slice(-2) + "/"
+    + ("0" + d.getDate()).slice(-2);
+  return ds;
+}
+
+function traverse(path, object, ta, cl) {
+  for (key in object) {
+    value = object[key];
+    if (typeof value === 'object') {
+      if (value.subtype === 'set') {
+        path.push(key);
+        var hierarchy = path.join("->");
+        for (k in value.values) {
+          var v = value.values[k];
+          if (v.created) {
+            console.log(v.created)
+            cl.push([get_datestring(v.created), "add", hierarchy, k]);
+          }
+          if (v.rp) {
+            ta.push([hierarchy, k, v.cnt, v.rp, v.dist, v.full]);
+          }
+        }
+        for (k in value.removed) {
+          var v = value.removed[k];
+          cl.push([get_datestring(v), "delete", hierarchy, k])
+        }
+        path.pop();
+      } else {
+        var item = typeof value.cnt === 'number';
+        if (item) path.push(key);
+        traverse(path, value, ta, cl)
+        if (item) path.pop();
+      }
+    }
+  }
+}
+
+function load(schema) {
+  ta = [ ];
+  cl = [ ];
+  path = [ ];
+  traverse(path, schema, ta, cl);
+
+  $('#anomalies').DataTable( {
+    data: ta,
+    order: [ [4, "desc"] ],
+    columns: [
+    { title: "Hierarchy" },
+    { title: "Value" },
+    { title: "Count" },
+    { title: "Relative Percentage" },
+    { title: "Distance" },
+    { title: "%Full" }
+      ]
+  });
+
+  $('#changelog').DataTable( {
+    data: cl,
+    order: [ [0, "desc"] ],
+    columns: [
+    { title: "Date" },
+    { title: "Action" },
+    { title: "Hierarchy" },
+    { title: "Value" }
+      ]
+  });
+
+  var url = new URL(window.location);
+  select_view(url.hash)
+}
+
+function select_view(hash) {
+  var ta = document.getElementById("ta");
+  var cl = document.getElementById("cl");
+  if (hash == '#changelog') {
+    ta.style = "display:none";
+    cl.style = "display:block";
+  } else {
+    ta.style = "display:block";
+    cl.style = "display:none";
+  }
+}
+</script>
+</head>
+<body onload="fetch(']]
+
+viewer1 =
+[[', load);">
+<p>
+<a href="#anomalies" onclick="select_view(); return true;">Top Anomalies</a>
+|
+<a href="#changelog" onclick="select_view('#changelog'); return true;">Change Log</a>
+</p>
+<div id="ta" style="display:none">
+    <h1>Top Anomalies</h1>
+    <table id="anomalies" class="display" width="100%">
+    </table>
+</div>
+<div id="cl" style="display:none">
+    <h1>Change Log</h1>
+    <table id="changelog" class="display" width="100%">
+    </table>
+</div>
+</body>
+</html>
+]]
