@@ -19,7 +19,7 @@ message_matcher = "Uuid < '\003'" -- slightly greater than a 1% sample
 
 hierarchy = {"Logger", "Type", "EnvVersion"} -- default
 max_set_size = 255 -- default
-time_series_length = 240 * 8 + 10 -- default (8 days + 1 hour) -- weekly pattern allowing for some skew
+time_series_length = 240 * 9 + 1 -- default (9 days plus the active aggregation window)
 time_series_resolution = 360 -- seconds default (6 minutes)
 time_series_sample_length = 10 -- default used to determine if a attribute has non sparse data
 
@@ -61,7 +61,7 @@ require "table"
 local alert = require "heka.alert"
 local sats  = require "streaming_algorithms.time_series"
 
-local time_series_length        = read_config("time_series_length") or 240 * 8 + 10
+local time_series_length        = read_config("time_series_length") or 240 * 9 + 1
 local time_series_resolution    = read_config("time_series_resolution") or 360
 time_series_resolution = time_series_resolution * 1e9
 local time_series_sample_length = read_config("time_series_sample_length") or 10
@@ -236,9 +236,6 @@ local function output_subtype(key, v, stats)
             if t[2] then
                 local ct = t[2]:current_time()
                 local st = ct - (time_series_length * time_series_resolution - 1)
-                if not t[3] then -- todo remove after the old data is updated
-                    t[3] = st
-                end
                 if stats.ns - ct < mp_window * time_series_resolution  then
                     compute_mp(t[2], t[3], st, key, ks, stats)
                 else
@@ -556,7 +553,6 @@ function timer_event(ns, shutdown)
     inject_payload(schema_ext, schema_name)
 
     if viewer then
-        report = nil -- todo remove (temporary to wipe any preserved report history)
         inject_payload("html", "viewer", viewer, alert.get_dashboard_uri(schema_name, schema_ext), viewer1)
         viewer = nil
         viewer1 = nil
