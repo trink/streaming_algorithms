@@ -217,7 +217,7 @@ local function compute_mp(ts, created, st, key, ks, stats)
                 end
             end
         end
-        local full = (stats.ns - created) / time_series_length * time_series_resolution
+        local full = (stats.ns - created) / (time_series_length * time_series_resolution)
         if full > 1 then full = 1 end
         add_to_payload(string.format(',"rp":%g,"dist":%g,"full":%g', rp, dist, full * 100))
     end
