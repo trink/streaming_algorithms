@@ -6,13 +6,22 @@
 The [Count-min sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch)
 calculates the frequency of an item in a stream.
 
-### Running Stats
-Calculates the mean, variance, and standard deviation
-https://www.johndcook.com/blog/standard_deviation/
+### Matrix
+[Matrix](https://trink.github.io/streaming_algorithms/lua_matrix.html)
+data structure for a 2d matrix.
 
 ### Piecewise Parabolic Prediction (P2)
 The [p2](http://www.cs.wustl.edu/~jain/papers/ftp/psqr.pdf) algorithm for
 dynamic calculation of quantiles and histograms without storing observation.
+
+### Running Stats
+Calculates the mean, variance, and standard deviation
+https://www.johndcook.com/blog/standard_deviation/
+
+
+### Time Series
+[Time series](https://trink.github.io/streaming_algorithms/lua_time_series.html)
+data structure for windowed calculations.
 
 [Full Documentation](http://trink.github.io/streaming_algorithms)
 

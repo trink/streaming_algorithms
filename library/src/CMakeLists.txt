@@ -5,6 +5,7 @@
 set(SA_SRCS
   common.c
   cm_sketch.c
+  matrix.c
   p2.c
   running_stats.c
   time_series.c

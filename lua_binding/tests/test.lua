@@ -417,3 +417,116 @@ local tests = {
 for i, v in ipairs(tests) do
   v()
 end
+
+
+-- ##########################
+local matrix = require "streaming_algorithms.matrix"
+
+local errors = {
+    function() local m = matrix.new(2) end, -- new() incorrect # args
+    function() local m = matrix.new(nil, 1) end, -- new() non numeric rows
+    function() local m = matrix.new(0, 1) end, -- new() 0 rows
+    function() local m = matrix.new(2, nil) end, -- new() non numeric cols
+    function() local m = matrix.new(2, 0) end, -- new() zero cols
+    function() local m = matrix.new(2, -1) end, -- out of range cols
+    function() local m = matrix.new(2, 1) --
+    m:clear_row() end,
+    function() local m = matrix.new(2, 1) -- set() nil row
+    m:set(nil, 0, 1) end,
+    function() local m = matrix.new(2, 1) -- get() invalid object
+    local invalid = 1
+    m.get(invalid, 1, 1) end,
+    function() local m = matrix.new(2, 1) -- set() non numeric value
+    m:set(0, 0, nil) end,
+    function() local m = matrix.new(2, 1) -- set() incorrect # args
+    m:set(0) end,
+    function() local m = matrix.new(2, 1) -- add() incorrect # args
+    m:add(0) end,
+    function() local m = matrix.new(2, 1) -- get() incorrect # args
+    m:get() end,
+    function() local m = matrix.new(2, 1) -- get_row() incorrect # args
+    m:get_row() end,
+    function() local m = matrix.new(2, 1) -- get_row() invalid row
+    m:get_row(true) end,
+}
+
+for i, v in ipairs(errors) do
+    local ok = pcall(v)
+    if ok then error(string.format("error test %d failed\n", i)) end
+end
+
+
+local tests = {
+    function()
+        local stats = matrix.new(2, 1)
+        local v = stats:get(1, 1)
+        if v ~= 0 then
+            error(string.format("initial value is not zero %d", v))
+        end
+
+        local v = stats:set(2, 1, 1)
+        if v ~= 1 then
+            error(string.format("set failed = %d", v))
+        end
+        local rows, cols = stats:get_configuration()
+        assert(rows == 2)
+        assert(cols == 1)
+        end,
+    function()
+        local cb = matrix.new(10, 1)
+        assert(not cb:get(11, 0), "row out of bounds")
+        assert(not cb:get(0, 1), "col out of bounds")
+        end,
+    function()
+        local cb = matrix.new(6, 1)
+        for i=1, 6 do
+            cb:add(i, 1, i)
+        end
+        local row = cb:get_row(1)
+        assert(#row == 1)
+        assert(row[1] == 1)
+        end,
+    function()
+        local data = {
+            {1, 2, 5, 10},
+            {0, 1, 2, 3},
+            {-1, 0, 7, 26},
+            {1, 2, 3, 4}
+        }
+        local m = matrix.new(4, 4)
+        for r,a in ipairs(data) do
+            for c,v in ipairs(a)  do
+                m:add(r, c, v)
+            end
+        end
+        local pcc, idx = m:pcc(4)
+        assert(math.abs(1 - pcc) < .000000001, pcc)
+        assert(idx == 2, idx)
+        pcc, idx = m:pcc(4, "min")
+        assert(math.abs(0.90765069670774 - pcc) < .000000001, pcc)
+        assert(idx == 3, idx)
+        m:clear_row(2)
+        pcc, idx = m:pcc(4)
+        assert(math.abs(0.95831484749991 - pcc) < .000000001, pcc)
+        assert(idx == 1, idx)
+        end,
+    function()
+        local data = {
+            {4000000, 0, 0, 0, 0},
+            {8000000, 0, 0, 0, 0}
+        }
+        local m = matrix.new(2, 5)
+        for r,a in ipairs(data) do
+            for c,v in ipairs(a)  do
+                m:add(r, c, v)
+            end
+        end
+        local pcc, closest = m:pcc(2)
+        assert(math.abs(1 - pcc) < .000000001, pcc)
+        assert(closest == 1, closest)
+        end,
+}
+
+for i, v in ipairs(tests) do
+  v()
+end
