@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-        <title>Piecewise Parabolic Prediction (P2) · GitBook</title>
+        <title>Matrix · GitBook</title>
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="description" content="">
         <meta name="generator" content="GitBook 3.2.2">
@@ -61,10 +61,10 @@
     <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
 
     
-    <link rel="next" href="lua_running_stats.html" />
+    <link rel="next" href="lua_p2.html" />
     
     
-    <link rel="prev" href="lua_matrix.html" />
+    <link rel="prev" href="lua_cm_sketch.html" />
     
 
     </head>
@@ -139,7 +139,7 @@
             
         </li>
     
-        <li class="chapter " data-level="2.2" data-path="lua_matrix.html">
+        <li class="chapter active" data-level="2.2" data-path="lua_matrix.html">
             
                 <a href="lua_matrix.html">
             
@@ -152,7 +152,7 @@
             
         </li>
     
-        <li class="chapter active" data-level="2.3" data-path="lua_p2.html">
+        <li class="chapter " data-level="2.3" data-path="lua_p2.html">
             
                 <a href="lua_p2.html">
             
@@ -298,7 +298,7 @@
     <!-- Title -->
     <h1>
         <i class="fa fa-circle-o-notch fa-spin"></i>
-        <a href="." >Piecewise Parabolic Prediction (P2)</a>
+        <a href="." >Matrix</a>
     </h1>
 </div>
 
@@ -313,179 +313,150 @@
     
                                 <section class="normal markdown-section">
                                 
-                                <h1 id="Lua_Piecewise_Parabolic_Prediction_(P2)_Module">Lua Piecewise Parabolic Prediction (P2) Module</h1>
+                                <h1 id="Lua_Matrix_Module">Lua Matrix Module</h1>
 <h2 id="Overview">1. Overview</h2>
-<p>Dynamic calculations of quatiles and histograms without storing observations.
-The module is globally registered and returned by the require function.</p>
-<h2 id="Example_Usage">2. Example Usage</h2>
-<pre><code class="lang-lua"><span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.p2&quot;</span>
-<span class="hljs-keyword">local</span> q = streaming_algorithms.p2.quantile(<span class="hljs-number">0.5</span>)
-<span class="hljs-keyword">for</span> i = <span class="hljs-number">1</span>, <span class="hljs-number">100</span> <span class="hljs-keyword">do</span>
-    q:add(i)
-<span class="hljs-keyword">end</span>
-<span class="hljs-keyword">local</span> cnt = q:count(<span class="hljs-number">2</span>)
-<span class="hljs-comment">-- cnt == 50</span>
+<p>A matrix data structure object.</p>
+<h2 id="Module">2. Module</h2>
+<h3 id="Example_Usage">2.1. Example Usage</h3>
+<pre><code class="lang-lua"><span class="hljs-keyword">local</span> matrix = <span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.matrix&quot;</span>
+
+<span class="hljs-keyword">local</span> m = matrix.new(<span class="hljs-number">20</span>, <span class="hljs-number">10</span>)
+m:add(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-number">99</span>)
+m:add(<span class="hljs-number">20</span>, <span class="hljs-number">10</span>, <span class="hljs-number">100</span>)
+<span class="hljs-keyword">local</span> val = m:get(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>)
+<span class="hljs-comment">-- val == 99</span>
 </code></pre>
-<h2 id="Module">3. Module</h2>
-<h3 id="Functions">3.1. Functions</h3>
-<h4 id="quantile">3.1.1. quantile</h4>
-<pre><code class="lang-lua"><span class="hljs-keyword">local</span> p2 = <span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.p2&quot;</span>
-<span class="hljs-keyword">local</span> q = p2.quantile(<span class="hljs-number">0.5</span>)
+<h3 id="Functions">2.2. Functions</h3>
+<h4 id="new">2.2.1. new</h4>
+<pre><code class="lang-lua"><span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.matrix&quot;</span>
+<span class="hljs-keyword">local</span> m = streaming_algorithms.matrix.new(<span class="hljs-number">20</span>, <span class="hljs-number">10</span>)
 </code></pre>
-<p>Creates a new quantile userdata object.</p>
+<p>Import the <em>matrix</em> via the Lua &apos;require&apos; function. The module is globally
+registered and returned by the require function.</p>
 <p><em>Arguments</em></p>
 <ul>
-<li>p (number) p_quantile to calculate (e.g. 0.5 == median)</li>
+<li>rows (unsigned) The number of rows in the matrix (must be &gt; 1).</li>
+<li>cols (unsigned) The number of columns in the matrix (must be &gt; 1).</li>
 </ul>
 <p><em>Return</em></p>
 <ul>
-<li>quantile userdata object</li>
+<li>matrix userdata object.</li>
 </ul>
-<h4 id="histogram">3.1.2. histogram</h4>
-<pre><code class="lang-lua"><span class="hljs-keyword">local</span> p2 = <span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.p2&quot;</span>
-<span class="hljs-keyword">local</span> h = p2.histogram(<span class="hljs-number">4</span>)
+<h3 id="Methods">2.3. Methods</h3>
+<h4 id="get_configuration">2.3.1. get_configuration</h4>
+<pre><code class="lang-lua"><span class="hljs-keyword">local</span> rows, columns = m:get_configuration()
 </code></pre>
-<p>Creates a new histogram userdata object.</p>
+<p>Returns the configuration of the matrix structure.</p>
 <p><em>Arguments</em></p>
 <ul>
-<li>buckets (integer) Number of histogram buckets (4-65534)</li>
+<li>none
+-
+<em>Return</em></li>
+<li>rows (unsigned) The number of rows in the matrix.</li>
+<li>columns (unsigned) The number of columns in the matrix.</li>
+</ul>
+<h4 id="add">2.3.2. add</h4>
+<pre><code class="lang-lua">v = m:add(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>)
+<span class="hljs-comment">-- v == 1</span>
+v = m:add(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-number">99</span>)
+<span class="hljs-comment">-- v == 100</span>
+</code></pre>
+<p>Adds a value to the specified matrix cell.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>row (unsigned)</li>
+<li>column (unsigned)</li>
+<li>value (number) The value to be added to the specified row/column.</li>
 </ul>
 <p><em>Return</em></p>
 <ul>
-<li>histogram userdata object</li>
+<li>The value of the cell nil if the request was out of bounds.</li>
 </ul>
-<h3 id="Quantile_Methods">3.2. Quantile Methods</h3>
-<h4 id="add">3.2.1. add</h4>
-<pre><code class="lang-lua">q:add(<span class="hljs-number">1.3243</span>)
+<h4 id="set">2.3.3. set</h4>
+<pre><code class="lang-lua">v = m:set(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>)
+<span class="hljs-comment">-- v == 1</span>
+v = m:set(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-number">99</span>)
+<span class="hljs-comment">-- v == 99</span>
 </code></pre>
-<p>Add the value to the quantile.</p>
+<p>Overwrites the value at a specific cell.</p>
 <p><em>Arguments</em></p>
 <ul>
-<li>value (number)</li>
+<li>row (unsigned)</li>
+<li>column (unsigned)</li>
+<li>value (number) The value to be overwritten at the specified row.</li>
 </ul>
 <p><em>Return</em></p>
 <ul>
-<li>quantile (number) NaN until five samples have been added</li>
+<li>The resulting value of the row or nil if the time was outside the range
+of the window.</li>
 </ul>
-<h4 id="clear">3.2.2. clear</h4>
-<pre><code class="lang-lua">q:clear()
+<h4 id="get">2.3.4. get</h4>
+<pre><code class="lang-lua">v = m:get(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>)
+<span class="hljs-comment">-- v == 99</span>
 </code></pre>
-<p>Resets the quantile to its initial state.</p>
+<p>Fetches the value at a specific cell.</p>
 <p><em>Arguments</em></p>
+<ul>
+<li>row (unsigned)</li>
+<li>column (unsigned)</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>The value at the specifed cell or nil if the request was out of bounds.</li>
+</ul>
+<h4 id="get_row">2.3.5. get_row</h4>
+<pre><code class="lang-lua">a = m:get_row(<span class="hljs-number">1</span>)
+<span class="hljs-comment">-- a == {98, 99}</span>
+</code></pre>
+<p>Returns an array of values containing column entries for the row.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>row (unsigned)</li>
+</ul>
+<p><em>Returns</em></p>
+<ul>
+<li>Array of values or nil if the request was out of bounds.</li>
+</ul>
+<h4 id="clear_row">2.3.6. clear_row</h4>
+<pre><code class="lang-lua">m:clear_row(<span class="hljs-number">1</span>)
+</code></pre>
+<p>Zeros out the specified row in the matrix.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>row (unsigned)</li>
+</ul>
+<p><em>Returns</em></p>
 <ul>
 <li>none</li>
 </ul>
-<p><em>Return</em></p>
-<ul>
-<li>none</li>
-</ul>
-<h4 id="count">3.2.3. count</h4>
-<pre><code class="lang-lua"><span class="hljs-keyword">local</span> count = q:count(marker)
+<h4 id="pcc">2.3.7. pcc</h4>
+<pre><code class="lang-lua">pcc, index = m:pcc(<span class="hljs-number">1</span>)
 </code></pre>
-<p>Returns the number of observations that are less than or equal to the specified
-marker.</p>
+<p>Returns Pearson&apos;s correlation coefficient of the most similar/different row in
+the matrix.</p>
 <p><em>Arguments</em></p>
 <ul>
-<li>marker (integer) Selects the percentile<ul>
-<li>0 = min</li>
-<li>1 = p/2</li>
-<li>2 = p</li>
-<li>3 = (1+p)/2</li>
-<li>4 = max</li>
+<li>row (unsigned)</li>
+<li>match (string) &quot;max|min&quot;, default &quot;max&quot;.</li>
 </ul>
-</li>
-</ul>
-<p><em>Return</em></p>
+<p><em>Returns</em></p>
 <ul>
-<li>count (integer)</li>
+<li>pcc (number/nil) Pearson&apos;s correlation coefficient.</li>
+<li>index (int/nil) Row index of the best match.</li>
 </ul>
-<h4 id="estimate">3.2.4. estimate</h4>
-<pre><code class="lang-lua"><span class="hljs-keyword">local</span> estimate = q:estimate(marker)
+<h4 id="fromstring">2.3.8. fromstring</h4>
+<pre><code class="lang-lua">m:fromstring(<span class="hljs-built_in">tostring</span>(m1))
 </code></pre>
-<p>Returns the estimated quantile value for the specified marker.</p>
+<p>Restores a matrix to the previously serialized state.</p>
 <p><em>Arguments</em></p>
 <ul>
-<li>marker (integer) 0-4 see <code>count</code></li>
+<li>serialization (string) The tostring output.</li>
 </ul>
 <p><em>Return</em></p>
 <ul>
-<li>estimate (number)</li>
+<li>none or throws an error.</li>
 </ul>
-<h4 id="fromstring">3.2.5. fromstring</h4>
-<pre><code class="lang-lua">q:fromstring(<span class="hljs-built_in">tostring</span>(q1))
-</code></pre>
-<p>Restores the quantile to the previously serialized state.</p>
-<p><em>Arguments</em></p>
-<ul>
-<li>serialization (string) tostring output</li>
-</ul>
-<p><em>Return</em></p>
-<ul>
-<li>none or throws an error</li>
-</ul>
-<h3 id="Histogram_Methods">3.3. Histogram Methods</h3>
-<h4 id="add">3.3.1. add</h4>
-<pre><code class="lang-lua">d:add(<span class="hljs-number">1.3243</span>)
-</code></pre>
-<p>Add the value to the histogram.</p>
-<p><em>Arguments</em></p>
-<ul>
-<li>value (number)</li>
-</ul>
-<p><em>Return</em></p>
-<ul>
-<li>none</li>
-</ul>
-<h4 id="clear">3.3.2. clear</h4>
-<pre><code class="lang-lua">h:clear()
-</code></pre>
-<p>Resets the histogram to its initial state.</p>
-<p><em>Arguments</em></p>
-<ul>
-<li>none</li>
-</ul>
-<p><em>Return</em></p>
-<ul>
-<li>none</li>
-</ul>
-<h4 id="count">3.3.3. count</h4>
-<pre><code class="lang-lua"><span class="hljs-keyword">local</span> count = h:count(marker)
-</code></pre>
-<p>Returns the number of observations that are less than or equal to the specified
-marker.</p>
-<p><em>Arguments</em></p>
-<ul>
-<li>marker (integer) Selects the percentile (marker/buckets)</li>
-</ul>
-<p><em>Return</em></p>
-<ul>
-<li>count (integer)</li>
-</ul>
-<h4 id="estimate">3.3.4. estimate</h4>
-<pre><code class="lang-lua"><span class="hljs-keyword">local</span> estimate = q:estimate(marker)
-</code></pre>
-<p>Returns the estimated quantile value for the specified marker.</p>
-<p><em>Arguments</em></p>
-<ul>
-<li>marker (integer) Selects the percentile (marker/buckets)</li>
-</ul>
-<p><em>Return</em></p>
-<ul>
-<li>estimate (number)</li>
-</ul>
-<h4 id="fromstring">3.3.5. fromstring</h4>
-<pre><code class="lang-lua">h:fromstring(<span class="hljs-built_in">tostring</span>(h1))
-</code></pre>
-<p>Restores the histogram to the previously serialized state.</p>
-<p><em>Arguments</em></p>
-<ul>
-<li>serialization (string) tostring output</li>
-</ul>
-<p><em>Return</em></p>
-<ul>
-<li>none or throws an error</li>
-</ul>
-<div id="anchors-navbar"><i class="fa fa-anchor"></i><ul><p><a href="#Lua_Piecewise_Parabolic_Prediction_(P2)_Module">Lua Piecewise Parabolic Prediction (P2) Module</a></p><li><a href="#Overview">1. Overview</a></li><li><a href="#Example_Usage">2. Example Usage</a></li><li><a href="#Module">3. Module</a></li><ul><li><a href="#Functions">3.1. Functions</a></li><ul><li><a href="#quantile">3.1.1. quantile</a></li><li><a href="#histogram">3.1.2. histogram</a></li></ul><li><a href="#Quantile_Methods">3.2. Quantile Methods</a></li><ul><li><a href="#add">3.2.1. add</a></li><li><a href="#clear">3.2.2. clear</a></li><li><a href="#count">3.2.3. count</a></li><li><a href="#estimate">3.2.4. estimate</a></li><li><a href="#fromstring">3.2.5. fromstring</a></li></ul><li><a href="#Histogram_Methods">3.3. Histogram Methods</a></li><ul><li><a href="#add">3.3.1. add</a></li><li><a href="#clear">3.3.2. clear</a></li><li><a href="#count">3.3.3. count</a></li><li><a href="#estimate">3.3.4. estimate</a></li><li><a href="#fromstring">3.3.5. fromstring</a></li></ul></ul></ul></div><a href="#Overview" id="goTop"><i class="fa fa-arrow-up"></i></a>
+<div id="anchors-navbar"><i class="fa fa-anchor"></i><ul><p><a href="#Lua_Matrix_Module">Lua Matrix Module</a></p><li><a href="#Overview">1. Overview</a></li><li><a href="#Module">2. Module</a></li><ul><li><a href="#Example_Usage">2.1. Example Usage</a></li><li><a href="#Functions">2.2. Functions</a></li><ul><li><a href="#new">2.2.1. new</a></li></ul><li><a href="#Methods">2.3. Methods</a></li><ul><li><a href="#get_configuration">2.3.1. get_configuration</a></li><li><a href="#add">2.3.2. add</a></li><li><a href="#set">2.3.3. set</a></li><li><a href="#get">2.3.4. get</a></li><li><a href="#get_row">2.3.5. get_row</a></li><li><a href="#clear_row">2.3.6. clear_row</a></li><li><a href="#pcc">2.3.7. pcc</a></li><li><a href="#fromstring">2.3.8. fromstring</a></li></ul></ul></ul></div><a href="#Overview" id="goTop"><i class="fa fa-arrow-up"></i></a>
                                 
                                 </section>
                             
@@ -512,12 +483,12 @@ marker.</p>
 
             
                 
-                <a href="lua_matrix.html" class="navigation navigation-prev " aria-label="Previous page: Matrix">
+                <a href="lua_cm_sketch.html" class="navigation navigation-prev " aria-label="Previous page: Count-min Sketch">
                     <i class="fa fa-angle-left"></i>
                 </a>
                 
                 
-                <a href="lua_running_stats.html" class="navigation navigation-next " aria-label="Next page: Running Stats">
+                <a href="lua_p2.html" class="navigation navigation-next " aria-label="Next page: Piecewise Parabolic Prediction (P2)">
                     <i class="fa fa-angle-right"></i>
                 </a>
                 
@@ -528,7 +499,7 @@ marker.</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Piecewise Parabolic Prediction (P2)","level":"2.3","depth":1,"next":{"title":"Running Stats","level":"2.4","depth":1,"path":"lua_running_stats.md","ref":"lua_running_stats.md","articles":[]},"previous":{"title":"Matrix","level":"2.2","depth":1,"path":"lua_matrix.md","ref":"lua_matrix.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"lua_p2.md","mtime":"2018-06-27T17:31:26.108Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-07-17T16:45:36.043Z"},"basePath":".","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Matrix","level":"2.2","depth":1,"next":{"title":"Piecewise Parabolic Prediction (P2)","level":"2.3","depth":1,"path":"lua_p2.md","ref":"lua_p2.md","articles":[]},"previous":{"title":"Count-min Sketch","level":"2.1","depth":1,"path":"lua_cm_sketch.md","ref":"lua_cm_sketch.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"lua_matrix.md","mtime":"2018-07-17T14:48:02.367Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-07-17T16:45:36.043Z"},"basePath":".","book":{"language":""}});
         });
     </script>
 </div>

@@ -2,7 +2,7 @@ var indexSectionsWithContent =
 {
   0: "cmprst",
   1: "s",
-  2: "cprt",
+  2: "cmprt",
   3: "s",
   4: "cms",
   5: "s",
