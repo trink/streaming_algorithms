@@ -60,6 +60,8 @@ require "string"
 require "table"
 local alert = require "heka.alert"
 local sats  = require "streaming_algorithms.time_series"
+local escape_json = require "lpeg.escape_sequences".escape_json
+local escape_html = require "lpeg.escape_sequences".escape_html
 
 local time_series_length        = read_config("time_series_length") or 240 * 9 + 1
 local time_series_resolution    = read_config("time_series_resolution") or 360
@@ -166,46 +168,6 @@ local function get_table(t, key)
 end
 
 
-local function escape_json(s)
-    return string.gsub(tostring(s), '[\1-\31\\"/%z]', {
-                           ["\\"] = "\\\\",
-                           ['"'] = '\\"',
-                           ["/"] = "\\/",
-                           ["\00"] = "\\u0000",
-                           ["\01"] = "\\u0001",
-                           ["\02"] = "\\u0002",
-                           ["\03"] = "\\u0003",
-                           ["\04"] = "\\u0004",
-                           ["\05"] = "\\u0005",
-                           ["\06"] = "\\u0006",
-                           ["\07"] = "\\u0007",
-                           ["\08"] = "\\b",
-                           ["\09"] = "\\t",
-                           ["\10"] = "\\n",
-                           ["\11"] = "\\u000B",
-                           ["\12"] = "\\f",
-                           ["\13"] = "\\r",
-                           ["\14"] = "\\u000E",
-                           ["\15"] = "\\u000F",
-                           ["\16"] = "\\u0010",
-                           ["\17"] = "\\u0011",
-                           ["\18"] = "\\u0012",
-                           ["\19"] = "\\u0013",
-                           ["\20"] = "\\u0014",
-                           ["\21"] = "\\u0015",
-                           ["\22"] = "\\u0016",
-                           ["\23"] = "\\u0017",
-                           ["\24"] = "\\u0018",
-                           ["\25"] = "\\u0019",
-                           ["\26"] = "\\u001A",
-                           ["\27"] = "\\u001B",
-                           ["\28"] = "\\u001C",
-                           ["\29"] = "\\u001D",
-                           ["\30"] = "\\u001E",
-                           ["\31"] = "\\u001F"})
-end
-
-
 local dygraphs_entry = [[
 <h1>%s</h1>
 <div id="raw%d" style="height: 200px; width: 100%%;"</div>
@@ -245,7 +207,7 @@ local function compute_mp(ts, created, st, key, ks, stats)
                 if stats.alerts_cnt < 25 then
                     stats.alerts_cnt = stats.alerts_cnt + 1
                     add_to_payload(string.format(',"alert":%d', ats))
-                    local title = string.format("%s->%s[%s]", table.concat(stats.path, "->"), tostring(key), ks);
+                    local title = escape_html(string.format("%s->%s[%s]", table.concat(stats.path, "->"), tostring(key), ks))
                     debug_graph(ts, st, title, stats)
                 end
             end
