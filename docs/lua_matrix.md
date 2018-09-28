@@ -1,7 +1,8 @@
 # Lua Matrix Module
 
 ## Overview
-A matrix data structure object.
+The matrix data structure module is globally registered and returned by the
+Lua require function.
 
 ## Module
 
@@ -23,12 +24,10 @@ require "streaming_algorithms.matrix"
 local m = streaming_algorithms.matrix.new(20, 10)
 ```
 
-Import the _matrix_ via the Lua 'require' function. The module is globally
-registered and returned by the require function.
-
 *Arguments*
 - rows (unsigned) The number of rows in the matrix (must be > 1).
 - cols (unsigned) The number of columns in the matrix (must be > 1).
+- type (nil/string) int|float (default int)
 
 *Return*
 - matrix userdata object.
@@ -65,7 +64,8 @@ Adds a value to the specified matrix cell.
 - value (number) The value to be added to the specified row/column.
 
 *Return*
-- The value of the cell nil if the request was out of bounds.
+- The resulting value at the specified cell or nil if the request was out of
+  bounds.
 
 #### set
 ```lua
@@ -83,8 +83,7 @@ Overwrites the value at a specific cell.
 - value (number) The value to be overwritten at the specified row.
 
 *Return*
-- The resulting value of the row or nil if the time was outside the range
-  of the window.
+- The value at the specified cell or nil if the request was out of bounds.
 
 #### get
 ```lua
@@ -99,7 +98,7 @@ Fetches the value at a specific cell.
 - column (unsigned)
 
 *Return*
-- The value at the specifed cell or nil if the request was out of bounds.
+- The value at the specified cell or nil if the request was out of bounds.
 
 #### get_row
 ```lua

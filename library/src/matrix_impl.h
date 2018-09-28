@@ -17,4 +17,10 @@ struct sa_matrix_int {
   int v[];
 };
 
+struct sa_matrix_flt {
+  int   rows;
+  int   cols;
+  float v[];
+};
+
 #endif

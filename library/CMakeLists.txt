@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-project(streaming_algorithms VERSION 0.0.4 LANGUAGES C)
+project(streaming_algorithms VERSION 0.0.5 LANGUAGES C)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A collection of streaming data algorithms")
 
 if(MSVC)

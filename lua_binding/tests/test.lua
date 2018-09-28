@@ -448,6 +448,7 @@ local errors = {
     m:get_row() end,
     function() local m = matrix.new(2, 1) -- get_row() invalid row
     m:get_row(true) end,
+    function() local m = matrix.new(2, 1, "bool") end, -- invalid type
 }
 
 for i, v in ipairs(errors) do
@@ -524,6 +525,89 @@ local tests = {
         local pcc, closest = m:pcc(2)
         assert(math.abs(1 - pcc) < .000000001, pcc)
         assert(closest == 1, closest)
+        end,
+}
+
+for i, v in ipairs(tests) do
+  v()
+end
+
+
+
+-- ##########################
+local matrix = require "streaming_algorithms.matrix"
+
+local tests = {
+    function()
+        local stats = matrix.new(2, 1, "float")
+        local v = stats:get(1, 1)
+        if v == v then
+            error(string.format("initial value is not NAN %g", v))
+        end
+
+        local v = stats:set(2, 1, 1.2)
+        assert(math.abs(1.2 - v) < .001, v)
+        local rows, cols = stats:get_configuration()
+        assert(rows == 2)
+        assert(cols == 1)
+        end,
+    function()
+        local cb = matrix.new(10, 1, "float")
+        assert(not cb:get(11, 0), "row out of bounds")
+        assert(not cb:get(0, 1), "col out of bounds")
+        end,
+    function()
+        local cb = matrix.new(6, 1, "float")
+        for i=1, 6 do
+            cb:add(i, 1, i)
+        end
+        local row = cb:get_row(1)
+        assert(#row == 1)
+        assert(row[1] == 1)
+        end,
+    function()
+        local data = {
+            {1, 2, 5, 10},
+            {0, 1, 2, 3},
+            {-1, 0, 7, 26},
+            {1, 2, 3, 4}
+        }
+        local m = matrix.new(4, 4, "float")
+        for r,a in ipairs(data) do
+            for c,v in ipairs(a)  do
+                m:add(r, c, v)
+            end
+        end
+        local pcc, idx = m:pcc(4)
+        assert(math.abs(1 - pcc) < .000000001, pcc)
+        assert(idx == 2, idx)
+        pcc, idx = m:pcc(4, "min")
+        assert(math.abs(0.90765069670774 - pcc) < .000000001, pcc)
+        assert(idx == 3, idx)
+        m:clear_row(2)
+        pcc, idx = m:pcc(4)
+        assert(math.abs(0.95831484749991 - pcc) < .000000001, pcc)
+        assert(idx == 1, idx)
+        end,
+    function()
+        local data = {
+            {4000000, 0, 0, 0, 0},
+            {8000000, 0, 0, 0, 0}
+        }
+        local m = matrix.new(2, 5, "float")
+        for r,a in ipairs(data) do
+            for c,v in ipairs(a)  do
+                m:add(r, c, v)
+            end
+        end
+        local pcc, closest = m:pcc(2)
+        assert(math.abs(1 - pcc) < .000000001, pcc)
+        assert(closest == 1, closest)
+        end,
+    function()
+        local m = matrix.new(2, 5, "float")
+        local pcc, closest = m:pcc(2)
+        assert(not pcc)
         end,
 }
 
