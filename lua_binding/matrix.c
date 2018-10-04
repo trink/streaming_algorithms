@@ -51,7 +51,7 @@ static sa_matrix_flt* check_matrix_flt(lua_State *lua, int args)
 
 static int matrix_new(lua_State *lua)
 {
-  static const char *types[] = {"int", "float", NULL};
+  static const char *types[] = { "int", "float", NULL };
   int n = lua_gettop(lua);
   luaL_argcheck(lua, n >= 2 && n <= 3, 0, "incorrect number of arguments");
   int rows = luaL_checkint(lua, 1);
@@ -76,12 +76,12 @@ static int matrix_new(lua_State *lua)
       m->rows = rows;
       m->cols = cols;
       sa_init_matrix_flt(m);
-  #ifdef LUA_SANDBOX
+#ifdef LUA_SANDBOX
       lua_getfield(lua, LUA_ENVIRONINDEX, g_flt_env);
       if (!lua_setfenv(lua, -2)) {
         luaL_error(lua, "failed to set the float environment");
       }
-  #endif
+#endif
       luaL_getmetatable(lua, g_flt_mt);
     }
     break;
@@ -112,8 +112,12 @@ static int matrix_get_configuration_flt(lua_State *lua)
 static int matrix_add_int(lua_State *lua)
 {
   sa_matrix_int *m = check_matrix_int(lua, 4);
-  int row = luaL_checkint(lua, 2) - 1;
-  int col = luaL_checkint(lua, 3) - 1;
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
+  int col = luaL_checkint(lua, 3);
+  luaL_argcheck(lua, col > 0 && col <= m->cols, 3, "invalid col");
+  --col;
   int v = luaL_checkint(lua, 4);
   int rv = sa_add_matrix_int(m, row, col, v);
   if (rv == INT_MIN) {
@@ -128,8 +132,12 @@ static int matrix_add_int(lua_State *lua)
 static int matrix_add_flt(lua_State *lua)
 {
   sa_matrix_flt *m = check_matrix_flt(lua, 4);
-  int row = luaL_checkint(lua, 2) - 1;
-  int col = luaL_checkint(lua, 3) - 1;
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
+  int col = luaL_checkint(lua, 3);
+  luaL_argcheck(lua, col > 0 && col <= m->cols, 3, "invalid col");
+  --col;
   double v = luaL_checknumber(lua, 4);
   float rv = sa_add_matrix_flt(m, row, col, v);
   if (rv == FLT_MIN) {
@@ -144,7 +152,9 @@ static int matrix_add_flt(lua_State *lua)
 static int matrix_clear_row_int(lua_State *lua)
 {
   sa_matrix_int *m = check_matrix_int(lua, 2);
-  int row = luaL_checkint(lua, 2) - 1;
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
   sa_init_matrix_row_int(m, row);
   return 0;
 }
@@ -153,7 +163,9 @@ static int matrix_clear_row_int(lua_State *lua)
 static int matrix_clear_row_flt(lua_State *lua)
 {
   sa_matrix_flt *m = check_matrix_flt(lua, 2);
-  int row = luaL_checkint(lua, 2) - 1;
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
   sa_init_matrix_row_flt(m, row);
   return 0;
 }
@@ -162,8 +174,12 @@ static int matrix_clear_row_flt(lua_State *lua)
 static int matrix_set_int(lua_State *lua)
 {
   sa_matrix_int *m = check_matrix_int(lua, 4);
-  int row = luaL_checkint(lua, 2) - 1;
-  int col = luaL_checkint(lua, 3) - 1;
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
+  int col = luaL_checkint(lua, 3);
+  luaL_argcheck(lua, col > 0 && col <= m->cols, 3, "invalid col");
+  --col;
   int v = luaL_checkint(lua, 4);
   int rv = sa_set_matrix_int(m, row, col, v);
   if (rv == INT_MIN) {
@@ -178,8 +194,12 @@ static int matrix_set_int(lua_State *lua)
 static int matrix_set_flt(lua_State *lua)
 {
   sa_matrix_flt *m = check_matrix_flt(lua, 4);
-  int row = luaL_checkint(lua, 2) - 1;
-  int col = luaL_checkint(lua, 3) - 1;
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
+  int col = luaL_checkint(lua, 3);
+  luaL_argcheck(lua, col > 0 && col <= m->cols, 3, "invalid col");
+  --col;
   double v = luaL_checknumber(lua, 4);
   float rv = sa_set_matrix_flt(m, row, col, v);
   if (rv == FLT_MIN) {
@@ -194,8 +214,12 @@ static int matrix_set_flt(lua_State *lua)
 static int matrix_get_int(lua_State *lua)
 {
   sa_matrix_int *m = check_matrix_int(lua, 3);
-  int row = luaL_checkint(lua, 2) - 1;
-  int col = luaL_checkint(lua, 3) - 1;
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
+  int col = luaL_checkint(lua, 3);
+  luaL_argcheck(lua, col > 0 && col <= m->cols, 3, "invalid col");
+  --col;
   int rv = sa_get_matrix_int(m, row, col);
   if (rv == INT_MIN) {
     lua_pushnil(lua);
@@ -209,8 +233,12 @@ static int matrix_get_int(lua_State *lua)
 static int matrix_get_flt(lua_State *lua)
 {
   sa_matrix_flt *m = check_matrix_flt(lua, 3);
-  int row = luaL_checkint(lua, 2) - 1;
-  int col = luaL_checkint(lua, 3) - 1;
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
+  int col = luaL_checkint(lua, 3);
+  luaL_argcheck(lua, col > 0 && col <= m->cols, 3, "invalid col");
+  --col;
   float rv = sa_get_matrix_flt(m, row, col);
   if (rv == FLT_MIN) {
     lua_pushnil(lua);
@@ -224,12 +252,9 @@ static int matrix_get_flt(lua_State *lua)
 static int matrix_get_row_int(lua_State *lua)
 {
   sa_matrix_int *m = check_matrix_int(lua, 2);
-  int row = luaL_checkint(lua, 2) - 1;
-  if (row < 0 || row >= m->rows) {
-    lua_pushnil(lua);
-    return 1;
-  }
-
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
   int64_t idx = (int64_t)row * m->cols;
   lua_createtable(lua, m->cols, 0);
   for (int i = 0; i < m->cols; ++i) {
@@ -243,12 +268,9 @@ static int matrix_get_row_int(lua_State *lua)
 static int matrix_get_row_flt(lua_State *lua)
 {
   sa_matrix_flt *m = check_matrix_flt(lua, 2);
-  int row = luaL_checkint(lua, 2) - 1;
-  if (row < 0 || row >= m->rows) {
-    lua_pushnil(lua);
-    return 1;
-  }
-
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
   int64_t idx = (int64_t)row * m->cols;
   lua_createtable(lua, m->cols, 0);
   for (int i = 0; i < m->cols; ++i) {
@@ -378,8 +400,8 @@ static int matrix_fromstring_flt(lua_State *lua)
 
 
 static double pcc_int(sa_matrix_int *m, int r, int r1,
-                  sa_running_stats *rs1,
-                  sa_running_stats *rs2)
+                      sa_running_stats *rs1,
+                      sa_running_stats *rs2)
 {
   double sd1 = sa_usd_running_stats(rs1);
   double sd2 = sa_usd_running_stats(rs2);
@@ -398,8 +420,8 @@ static double pcc_int(sa_matrix_int *m, int r, int r1,
 
 
 static double pcc_flt(sa_matrix_flt *m, int r, int r1,
-                  sa_running_stats *rs1,
-                  sa_running_stats *rs2)
+                      sa_running_stats *rs1,
+                      sa_running_stats *rs2)
 {
   double sd1 = sa_usd_running_stats(rs1);
   double sd2 = sa_usd_running_stats(rs2);
@@ -410,7 +432,10 @@ static double pcc_flt(sa_matrix_flt *m, int r, int r1,
   for (int i = 0; i < m->cols; ++i) {
     int64_t ridx = (int64_t)r * m->cols;
     int64_t r1idx = (int64_t)r1 * m->cols;
-    d += (double)m->v[ridx + i] * m->v[r1idx + i];
+    double tmp = (double)m->v[ridx + i] * m->v[r1idx + i];
+    if (!isnan(tmp)) {
+      d += tmp;
+    }
   }
   d = (d - m->cols * rs1->mean * rs2->mean) / (m->cols * sd1 * sd2);
   return d;
@@ -435,7 +460,9 @@ static sa_running_stats getrs_flt(sa_matrix_flt *m, int row)
   sa_init_running_stats(&rs);
   for (int i = 0; i < m->cols; ++i) {
     int64_t idx = (int64_t)row * m->cols;
-    sa_add_running_stats(&rs, m->v[idx + i]);
+    float f = m->v[idx + i];
+    if (isnan(f)) {f = 0;}
+    sa_add_running_stats(&rs, f);
   }
   return rs;
 }
@@ -445,11 +472,9 @@ static int matrix_pcc_int(lua_State *lua)
 {
   static const char *match_opts[] = { "max", "min", NULL };
   sa_matrix_int *m = luaL_checkudata(lua, 1, g_int_mt);
-  int row = luaL_checkint(lua, 2) - 1;
-  if (row < 0 || row >= m->rows) {
-    lua_pushnil(lua);
-    return 1;
-  }
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
   int match = luaL_checkoption(lua, 3, match_opts[0], match_opts);
 
   double d = -INFINITY;
@@ -492,11 +517,9 @@ static int matrix_pcc_flt(lua_State *lua)
 {
   static const char *match_opts[] = { "max", "min", NULL };
   sa_matrix_flt *m = luaL_checkudata(lua, 1, g_flt_mt);
-  int row = luaL_checkint(lua, 2) - 1;
-  if (row < 0 || row >= m->rows) {
-    lua_pushnil(lua);
-    return 1;
-  }
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
   int match = luaL_checkoption(lua, 3, match_opts[0], match_opts);
 
   double d = -INFINITY;
@@ -535,6 +558,107 @@ static int matrix_pcc_flt(lua_State *lua)
 }
 
 
+static const char *merge_ops[] = { "add", "set", NULL };
+static int matrix_merge_int(lua_State *lua)
+{
+  int i = lua_gettop(lua);
+  luaL_argcheck(lua, i >= 2 && i <= 3, 0, "incorrect number of arguments");
+  sa_matrix_int *m = luaL_checkudata(lua, 1, g_int_mt);
+  sa_matrix_int *m1 = luaL_checkudata(lua, 2, g_int_mt);
+  int op = luaL_checkoption(lua, 3, merge_ops[0], merge_ops);
+
+  int (*fn)(sa_matrix_int *, int, int, int);
+  switch (op) {
+  case 0:
+    fn = sa_add_matrix_int;
+    break;
+  case 1:
+    fn = sa_set_matrix_int;
+    break;
+  }
+
+  int rows = m->rows > m1->rows ? m1->rows : m->rows;
+  int cols = m->cols > m1->cols ? m1->cols : m->cols;
+  for (int64_t r = 0; r < rows; ++r) {
+    for (int c = 0; c < cols; ++c) {
+      fn(m, r, c, m1->v[r * m1->cols + c]);
+    }
+  }
+  return 0;
+}
+
+
+static int matrix_merge_flt(lua_State *lua)
+{
+  int i = lua_gettop(lua);
+  luaL_argcheck(lua, i >= 2 && i <= 3, 0, "incorrect number of arguments");
+  sa_matrix_flt *m = luaL_checkudata(lua, 1, g_flt_mt);
+  sa_matrix_flt *m1 = luaL_checkudata(lua, 2, g_flt_mt);
+  int op = luaL_checkoption(lua, 3, merge_ops[0], merge_ops);
+
+  int rows = m->rows > m1->rows ? m1->rows : m->rows;
+  int cols = m->cols > m1->cols ? m1->cols : m->cols;
+  switch (op) {
+  case 0:
+    for (int64_t r = 0; r < rows; ++r) {
+      for (int c = 0; c < cols; ++c) {
+        float f = m1->v[r * m1->cols + c];
+        if (!isnan(f)) {
+          sa_add_matrix_flt(m, r, c, f);
+        }
+      }
+    }
+    break;
+  case 1:
+    for (int64_t r = 0; r < rows; ++r) {
+      for (int c = 0; c < cols; ++c) {
+        sa_set_matrix_flt(m, r, c, m1->v[r * m1->cols + c]);
+      }
+    }
+    break;
+  }
+  return 0;
+}
+
+
+static int matrix_sum_int(lua_State *lua)
+{
+  int i = lua_gettop(lua);
+  luaL_argcheck(lua, i >= 2 && i <= 3, 0, "incorrect number of arguments");
+  sa_matrix_int *m = luaL_checkudata(lua, 1, g_int_mt);
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
+  double sum = 0;
+  for (int i = 0; i < m->cols; ++i) {
+    sum += m->v[row * m->cols + i];
+  }
+  lua_pushnumber(lua, sum);
+  return 1;
+}
+
+
+static int matrix_sum_flt(lua_State *lua)
+{
+  int i = lua_gettop(lua);
+  luaL_argcheck(lua, i >= 2 && i <= 3, 0, "incorrect number of arguments");
+  sa_matrix_flt *m = luaL_checkudata(lua, 1, g_flt_mt);
+  int row = luaL_checkint(lua, 2);
+  luaL_argcheck(lua, row > 0 && row <= m->rows, 2, "invalid row");
+  --row;
+  double sum = 0;
+  float v = 0;
+  for (int i = 0; i < m->cols; ++i) {
+    v = m->v[row * m->cols + i];
+    if (!isnan(v)) {
+      sum += v;
+    }
+  }
+  lua_pushnumber(lua, sum);
+  return 1;
+}
+
+
 static const struct luaL_reg matrix_f[] =
 {
   { "new", matrix_new },
@@ -551,8 +675,10 @@ static const struct luaL_reg matrix_int_m[] =
   { "get", matrix_get_int },
   { "get_configuration", matrix_get_configuration_int },
   { "get_row", matrix_get_row_int },
-  { "set", matrix_set_int },
+  { "merge", matrix_merge_int },
   { "pcc", matrix_pcc_int },
+  { "set", matrix_set_int },
+  { "sum", matrix_sum_int },
   { NULL, NULL }
 };
 
@@ -566,8 +692,10 @@ static const struct luaL_reg matrix_flt_m[] =
   { "get", matrix_get_flt },
   { "get_configuration", matrix_get_configuration_flt },
   { "get_row", matrix_get_row_flt },
-  { "set", matrix_set_flt },
+  { "merge", matrix_merge_flt },
   { "pcc", matrix_pcc_flt },
+  { "set", matrix_set_flt },
+  { "sum", matrix_sum_flt },
   { NULL, NULL }
 };
 

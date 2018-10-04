@@ -12,73 +12,67 @@ change in behavior.
 ## Sample Configuration
 
 ```lua
-filename = "heka_message_monitor.lua"
+filename        = "heka_message_monitor.lua"
 ticker_interval = 360
-preserve_data = true
+preserve_data   = true
 message_matcher = "Uuid < '\003'" -- slightly greater than a 1% sample
 
-hierarchy = {"Logger", "Type", "EnvVersion"} -- default
-max_set_size = 255 -- default
-time_series_length = 240 * 9 + 1 -- default (9 days plus the active aggregation window)
-time_series_resolution = 360 -- seconds default (6 minutes)
-time_series_sample_length = 10 -- default used to determine if a attribute has non sparse data
-
-mp_window = 240 -- default (1 day)
-mp_percent_data = 10 -- default (used for an estimate, if an alert would be trigger the exact value is verified)
+hierarchy       = {"Logger", "Type", "EnvVersion"} -- default
+max_set_size    = 255 -- default
+samples         = 25
+sample_interval = 3600
 
 exclude = nil -- default table of field names to exclude from monitoring/analyis e.g. `{"Pid", "Fields[Date]"}`
+-- telemetry
+-- exclude = {"Hostname", "Pid", "Severity", "Payload", "EnvVersion", "Fields[content]", "Fields[Date]", "Fields[sampleId]", "Fields[DecodeErrorDetail]"}
+
 
 alert = {
-  disabled = false,
-  prefix = true,
-  throttle = 90,
-  modules = {
+  disabled  = false,
+  prefix    = true,
+  throttle  = 90,
+  modules   = {
     email = {recipients = {"trink@mozilla.com"}},
   },
   thresholds = {
-    mp_percent = 50, -- default percentage of matrix profile range the top 5% of discords must cover before alerting (max - median)
-    mp_mindist = 10, -- default minimum distance change before alerting (max - median)
-    mp_suppress = false, -- suppress alerts until the matrix profile has been active for time_series_length
-  }
-}
+    -- pcc          = 0.3,  -- default minimum correlation coefficient (less than or equal alerts)
+    -- submissions  = 1000, -- default minimum number of submissions before alerting in at least the current and one previous interval
+    active          = sample_interval  * 5, -- number of seconds after field creation before alerting
+  }}
 
 ```
 
 ## Analysis Behavior (based on subtype)
 - `unknown` - no analysis
-- `unique`  - min/max lengths
-- `range`   - min/max values
-- `set`     - matrix profile analysis for frequency of each item
+- `unique`  - min/max lengths, hyperloglog percent duplicate calculation
+- `range`   - histogram analysis of the range
+- `set`     - histogram analysis of enumerated set
 - `sparse`  - weights of each of the most frequent items are computed
 --]]
-_PRESERVATION_VERSION = read_config("preservation_version") or 0
+_PRESERVATION_VERSION = read_config("preservation_version") or 1
 schema = {}
 
 require "math"
 require "os"
 require "string"
 require "table"
-local alert = require "heka.alert"
-local sats  = require "streaming_algorithms.time_series"
+local alert  = require "heka.alert"
+local matrix = require "streaming_algorithms.matrix"
 local escape_json = require "lpeg.escape_sequences".escape_json
 local escape_html = require "lpeg.escape_sequences".escape_html
 
-local time_series_length        = read_config("time_series_length") or 240 * 9 + 1
-local time_series_resolution    = read_config("time_series_resolution") or 360
-time_series_resolution = time_series_resolution * 1e9
-local time_series_sample_length = read_config("time_series_sample_length") or 10
-time_series_length  = time_series_length + 1 -- add an extra interval for the current/incomplete data
-
-local mp_window         = read_config("mp_window") or 240
-local mp_percent_data   = read_config("mp_percent_data") or 10
-local max_set_size      = read_config("max_set_size") or 255
 local hierarchy         = read_config("hierarchy") or {"Logger", "Type", "EnvVersion"}
 local levels            = #hierarchy - 1
 local leaf              = hierarchy[levels + 1];
 
-local alert_mp_percent  = alert.get_threshold("mp_percent") or 50
-local alert_mp_mindist  = alert.get_threshold("mp_mindist") or 10
-local alert_mp_suppress = alert.get_threshold("mp_suppress")
+local max_set_size      = read_config("max_set_size") or 255
+local samples           = read_config("samples") or 25
+local sample_interval   = read_config("sample_interval") or 3600
+sample_interval         = sample_interval * 1e9
+
+local alert_pcc         = alert.get_threshold("pcc") or 0.3
+local alert_submissions = alert.get_threshold("submissions") or 1000
+local alert_active      = alert.get_threshold("active") or 3600
 
 local exclude = read_config("exclude") or {}
 local exclude_headers
@@ -112,6 +106,21 @@ local function get_type(t)
 end
 
 
+local function init_header()
+    return {
+        created     = 0,
+        updated     = 0,
+        alerted     = false,
+        cnt         = 0,
+        values_cnt  = 0,
+        values      = {},
+        subtype     = "unknown",
+        min         = math.huge,
+        max         = -math.huge
+    }
+end
+
+
 local exclude_table = {exclude = true}
 local function get_entry_table(t, key)
     local v = t[key]
@@ -119,24 +128,14 @@ local function get_entry_table(t, key)
         v = {}
         v.cnt = 0
         v.headers = {
---            Uuid        = {cnt = 0, values_cnt = 0, values = {}, subtype = "unique",
---                min = math.huge, max = -math.huge},
---            Timestamp   = {cnt = 0, values_cnt = 0, values = {}, subtype = "range",
---                min = math.huge, max = -math.huge},
-            Logger      = {cnt = 0, values_cnt = 0, values = {}, subtype = "unknown",
-                min = math.huge, max = -math.huge},
-            Hostname    = {cnt = 0, values_cnt = 0, values = {}, subtype = "unknown",
-                min = math.huge, max = -math.huge},
-            Type        = {cnt = 0, values_cnt = 0, values = {}, subtype = "unknown",
-                min = math.huge, max = -math.huge},
-            Payload     = {cnt = 0, values_cnt = 0, values = {}, subtype = "unique",
-                min = math.huge, max = -math.huge},
-            EnvVersion  = {cnt = 0, values_cnt = 0, values = {}, subtype = "unknown",
-                min = math.huge, max = -math.huge},
-            Pid         = {cnt = 0, values_cnt = 0, values = {}, subtype = "unknown",
-                min = math.huge, max = -math.huge},
-            Severity    = {cnt = 0, values_cnt = 0, values = {}, subtype = "unknown",
-                min = math.huge, max = -math.huge},
+            -- Uuid and Timestamp are not tracked
+            Logger      = init_header(),
+            Hostname    = init_header(),
+            Type        = init_header(),
+            Payload     = init_header(),
+            EnvVersion  = init_header(),
+            Pid         = init_header(),
+            Severity    = init_header(),
         }
         if exclude_headers then
             for i,h in ipairs(exclude_headers) do
@@ -167,55 +166,50 @@ local function get_table(t, key)
     return v
 end
 
-
-local dygraphs_entry = [[
-<h1>%s</h1>
-<div id="raw%d" style="height: 200px; width: 100%%;"</div>
+local bar_div = [[
+<div id="%s""</div>
 <script type="text/javascript">
-  gr%d = new Dygraph(document.getElementById("raw%d"), "Date,raw\n" + "%s");
-</script>
-<div id="mp%d" style="height: 100px; width: 100%%;"</div>
-<script type="text/javascript">
-  gm%d = new Dygraph(document.getElementById("mp%d"), "Date,mp\n" + "%s");
-</script>
+MG.data_graphic({
+    title: '%s',
+    data: [%s],
+    chart_type: 'bar',
+    width: %d,
+    height: 320,
+    bottom: 60,
+    target: '#%s',
+    x_accessor: 'x',
+    y_accessor: 'y',
+    rotate_x_labels: 45
+});</script>
 ]]
-
-local function debug_graph(ts, st, title, stats)
-    local raw = ts:get_range(nil, time_series_length - 1)
-    local mp  = ts:matrix_profile(nil, time_series_length - 1, mp_window, 100, "mp") -- todo avoid recalculating it again just to get the array
-    local dgraw = {}
-    local dgmp = {}
-    for i,v in ipairs(raw) do
-        local date = os.date("%Y/%m/%d %H:%M:%S", (st + i * time_series_resolution)/1e9)
-        dgraw[i] = string.format("%s,%d\\n", date, v)
-        dgmp[i]  = string.format("%s,%g\\n", date, mp[i] or 0/0) -- fill with NaN to keep the graphs aligned
+local function debug_alert(v, pcc, row, closest, title, alerts)
+    local cnt = #alerts
+    local curr = v.data:get_row(row)
+    local cdata = {}
+    local labels = {}
+    for k,e in pairs(v.values) do
+        labels[e.idx] = k
     end
-    local i = stats.alerts_cnt
-    stats.alerts[i] = string.format(dygraphs_entry, title, i, i, i, table.concat(dgraw), i, i, i, table.concat(dgmp));
-end
-
-
-local function compute_mp(ts, created, st, key, ks, stats)
-    stats.mp_cnt = stats.mp_cnt + 1
-    add_to_payload(string.format(',"created":%d', created))
-    local ats, rp, dist = ts:matrix_profile(nil, time_series_length - 1, mp_window, mp_percent_data, "anomaly_current")
-    if ats and rp == rp then
-        if rp > alert_mp_percent and dist > alert_mp_mindist and (created <= st or not alert_mp_suppress) then
-            -- re-check using the exact calculation
-            ats, rp, dist = ts:matrix_profile(nil, time_series_length - 1, mp_window, 100, "anomaly_current")
-            if rp > alert_mp_percent and dist > alert_mp_mindist then
-                if stats.alerts_cnt < 25 then
-                    stats.alerts_cnt = stats.alerts_cnt + 1
-                    add_to_payload(string.format(',"alert":%d', ats))
-                    local title = escape_html(string.format("%s->%s[%s]", table.concat(stats.path, "->"), tostring(key), ks))
-                    debug_graph(ts, st, title, stats)
-                end
-            end
-        end
-        local full = (stats.ns - created) / (time_series_length * time_series_resolution)
-        if full > 1 then full = 1 end
-        add_to_payload(string.format(',"rp":%g,"dist":%g,"full":%g', rp, dist, full * 100))
+    for x,y in ipairs(curr) do
+        cdata[x] = string.format('{x:"%s",y:%d}', labels[x], y)
     end
+
+    local width = math.floor(1000 / v.values_cnt)
+    if width < 25 then width = 25 end
+    width = width * v.values_cnt
+
+    local div = string.format("current%d", cnt)
+    local c = string.format(bar_div, div, string.format("current = %d", row), table.concat(cdata, ","), width, div);
+
+    local prev = v.data:get_row(closest)
+    local pdata = {}
+    for x,y in ipairs(prev) do
+        pdata[x] = string.format('{x:"%s",y:%d}', labels[x], y)
+    end
+
+    div = string.format("closest%d", cnt)
+    local p = string.format(bar_div, div, string.format("closest index = %d", closest), table.concat(pdata, ","), width, div);
+    alerts[cnt + 1] = string.format("<h1>%s</h1>\n<span>Pearson's Correlation Coefficient:%g</span>\n%s%s", title, pcc, c, p)
 end
 
 
@@ -223,42 +217,37 @@ local function output_subtype(key, v, stats)
     local sep = ""
     add_to_payload(string.format(',"subtype":"%s"', v.subtype))
     if v.subtype == "set" then
-        add_to_payload(string.format(',"values_cnt":%d,"values":{', v.values_cnt))
+        add_to_payload(string.format(',"created":%d,"updated":%d,"alerted":%s,"values_cnt":%d,"cint":%d,"values":{', v.created, v.updated, tostring(v.alerted), v.values_cnt, v.cint))
         for k, t in pairs(v.values) do
-            stats.var_cnt = stats.var_cnt + 1
             local ks = escape_json(k)
-            add_to_payload(string.format('%s"%s":{"cnt":%d', sep, ks, t[1]))
-            if t[2] then
-                local ct = t[2]:current_time()
-                local st = ct - (time_series_length * time_series_resolution - 1)
-                if stats.ns - ct < mp_window * time_series_resolution  then
-                    compute_mp(t[2], t[3], st, key, ks, stats)
-                else
-                    local t = v.removed
-                    if not t then
-                        t = {}
-                        v.removed = t
-                    end
-                    t[k] = stats.ns
-                    v.values[k] = nil -- remove inactive matrix profile
-                    v.values_cnt = v.values_cnt - 1
-               end
-            end
-            add_to_payload("}")
+            add_to_payload(string.format('%s"%s":{"idx":%d,"cnt":%d}', sep, ks, t.idx, t.cnt))
             sep = ","
         end
         add_to_payload("}")
-        if v.removed then
-            sep = ""
-            add_to_payload(string.format(',"removed":{'))
-            for k, t in pairs(v.removed) do
-                add_to_payload(string.format('%s"%s":%d', sep, escape_json(k), t))
-                sep = ","
-                if stats.ns - t >=  time_series_length * time_series_resolution then
-                    v.removed[k] = nil
+
+        local pcc, closest
+        if v.values_cnt > 2 then pcc, closest = v.data:pcc(v.cint) end
+        if pcc then
+            add_to_payload(string.format(',"pcc":%g,"closest_row":%d', pcc, closest))
+            local submissions = v.data:sum(v.cint)
+            if submissions >= alert_submissions
+            and pcc <= alert_pcc
+            and not v.alerted
+            and v.updated - v.created > alert_active
+            and #stats.alerts < 25 then
+                local alert = false
+                for i=1, samples do
+                    -- confirm there is at least one other row with the minimum number of submissions
+                    if i ~= v.cint and v.data:sum(i) >= alert_submissions then
+                        alert = true
+                        break
+                    end
+                end
+                if alert then
+                    v.alerted = true
+                    debug_alert(v, pcc, v.cint, closest, escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), stats.alerts)
                 end
             end
-            add_to_payload("}")
         end
     elseif v.subtype == "sparse" then
         add_to_payload(string.format(',"values_cnt":%d,"values":{', v.values_cnt))
@@ -336,6 +325,7 @@ end
 local function process_entry(ns, f, value, entry)
     if entry.exclude then return end
 
+    if ns > entry.updated then entry.updated = ns end
     entry.cnt = entry.cnt + 1
     if f.value_type ~= entry.type then
         entry.type = -1 -- mis-matched types
@@ -344,13 +334,11 @@ local function process_entry(ns, f, value, entry)
     if entry.subtype == "unknown" then
         local v = entry.values[value]
         if v then
-            v[1] = v[1] + 1
-            v[3]:add(ns, 1)
+            v.cnt = v.cnt + 1
         else
-            local sts = sats.new(time_series_sample_length, time_series_resolution)
-            sts:add(ns, 1)
-            entry.values[value] = {1, nil, sts}
             entry.values_cnt = entry.values_cnt + 1
+            v = {idx = entry.values_cnt, cnt = 1}
+            entry.values[value] = v
         end
 
         if type(value) == "string" then
@@ -362,14 +350,13 @@ local function process_entry(ns, f, value, entry)
             if value > entry.max then entry.max = value end
         end
 
-        if entry.values_cnt == max_set_size or entry.cnt == max_set_size then
+        if entry.cnt == max_set_size then
             local ratio = entry.cnt / entry.values_cnt
             if entry.type == 2 or entry.type == 3 then -- numeric
                 if ratio < 2 then
                     entry.subtype = "range"
                     entry.values = nil
                     entry.values_cnt = nil
-                    -- no time series analysis
                 else
                     entry.subtype = "set"
                 end
@@ -378,41 +365,39 @@ local function process_entry(ns, f, value, entry)
                     entry.subtype = "unique"
                     entry.values = nil
                     entry.values_cnt = nil
-                    -- no time series analysis
                 else
                     entry.subtype = "set"
                 end
             end
+            if entry.subtype == "set" then
+                entry.data = matrix.new(samples, entry.values_cnt)
+                entry.cint = math.floor(ns / sample_interval) % samples + 1
+            end
         end
     elseif entry.subtype == "set" then
         local v = entry.values[value]
+        local int = math.floor(ns / sample_interval) % samples + 1
+        if ns == entry.updated and entry.cint ~= int then
+            entry.cint = int
+            entry.data:clear_row(int) -- don't worry about any intervals we may have skipped
+        end
         if v then
-            local ts, sts = v[2], v[3]
-            v[1] = v[1] + 1
-            if ts then
-                ts:add(ns, 1)
-            elseif sts then
-                sts:add(ns, 1)
-                local sum, rows = sts:stats(nil, time_series_sample_length, "sum")
-                if rows == time_series_sample_length then  -- non sparse data
-                    ts = sats.new(time_series_length, time_series_resolution)
-                    ts:merge(sts, "set")
-                    v[2] = ts
-                    v[3] = ns -- creation time of the matrix profile
-                end
-            end
+            entry.data:add(int, v.idx, 1)
+            v.cnt = v.cnt + 1
         else
-            if entry.values_cnt == max_set_size then
-                entry.subtype = "sparse"
-                entry.removed = nil
-                for k,v in pairs(entry.values) do
-                    entry.values[k] = v[1];
-                end
-            else
-                local sts = sats.new(time_series_sample_length, time_series_resolution)
-                sts:add(ns, 1)
-                entry.values[value] = {1, nil, sts}
+            if entry.values_cnt < max_set_size then
                 entry.values_cnt = entry.values_cnt + 1
+                local m = matrix.new(samples, entry.values_cnt)
+                m:merge(entry.data)
+                m:add(int, entry.values_cnt, 1)
+                entry.data = m
+                entry.values[value] = {idx = entry.values_cnt, cnt = 1}
+            else
+                entry.subtype = "sparse"
+                for k,v in pairs(entry.values) do
+                    entry.values[k] = v.cnt;
+                end
+                entry.data = nil
             end
         end
     elseif entry.subtype == "sparse" then
@@ -488,6 +473,8 @@ function process_message()
         if not entry then
             entry = {
                 cnt = 0,
+                created = ns,
+                updated = 0,
                 type = f.value_type,
                 representation = f.representation,
                 repetition = #f.value > 1,
@@ -495,12 +482,11 @@ function process_message()
                 values = {},
                 min = math.huge,
                 max = -math.huge,
-                subtype = "unknown"
+                subtype = "unknown",
+                alerted = false
             }
             if f.representation == "json" then
                 entry.subtype = "unique"
-            elseif f.value_type == 4 then -- boolean
-                entry.subtype = "set"
             end
             v.fields[f.name] = entry
         end
@@ -509,21 +495,18 @@ function process_message()
     return 0
 end
 
-
-local viewer
-local viewer1
-local alert_name = "alerts"
-local alert_ext  = "html"
-local schema_name = "message_schema"
-local schema_ext = "json"
-local dygraphs_template = [[
+local schema_name   = "message_schema"
+local schema_ext    = "json"
+local alert_name    = "alerts"
+local alert_ext     = "html"
+local html_fmt = [[
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<script type="text/javascript" src="graphs/js/dygraph-combined.js">
-</script>
-</head>
+<link href='css/metricsgraphics.css' rel='stylesheet' type='text/css' id='light'>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src='graphs/js/metricsgraphics.min.js'></script>
 <body>
 %s
 </body>
@@ -533,170 +516,17 @@ function timer_event(ns, shutdown)
     if shutdown then return end
 
     local stats = {
-        ns          = ns,
         path        = {},
         alerts      = {},
-        alerts_cnt  = 0,
-        mp_cnt      = 0,
-        var_cnt     = 0
     }
 
     add_to_payload("{\n")
     output_table(schema, 0, stats)
-    add_to_payload(string.format(',"variable_cnt":%d,\n"mp_cnt":%d\n,\n"hierarchy_levels":%d\n}',
-                                 stats.var_cnt, stats.mp_cnt, levels + 1))
+    add_to_payload(string.format(',"hierarchy_levels":%d\n}', levels + 1))
     inject_payload(schema_ext, schema_name)
 
-    if viewer then
-        inject_payload("html", "viewer", viewer, alert.get_dashboard_uri(schema_name, schema_ext), viewer1)
-        viewer = nil
-        viewer1 = nil
-    end
-
-    if stats.alerts_cnt > 0 then
-        inject_payload(alert_ext, alert_name, string.format(dygraphs_template, table.concat(stats.alerts, "\n")))
-        -- only one throttled alert for all hierarchys (the graph output contains all the issues)
-        alert.send(alert_name, "matrix profile",
-        string.format("graphs: %s\n", alert.get_dashboard_uri(alert_name, alert_ext)))
+    if #stats.alerts > 0 then
+        inject_payload(alert_ext, alert_name, string.format(html_fmt, table.concat(stats.alerts, "\n")))
+        alert.send(alert_name, "pcc", string.format("graphs: %s\n", alert.get_dashboard_uri(alert_name, alert_ext)))
     end
 end
-
-viewer = [[
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.css">
-<script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.3.1.js">
-</script>
-<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js">
-</script>
-<script type="text/javascript">
-function fetch(url, callback) {
-  var req = new XMLHttpRequest();
-  var caller = this;
-  req.onreadystatechange = function() {
-    if (req.readyState == 4) {
-      if (req.status == 200 ||
-        req.status == 0) {
-        callback(JSON.parse(req.responseText));
-      } else {
-        var p = document.createElement('p');
-        p.innerHTML = "data retrieval failed: " + url;
-        document.body.appendChild(p);
-      }
-    }
-  };
-  req.open("GET", url, true);
-  req.send(null);
-}
-
-function get_datestring(ns) {
-  var d = new Date(ns / 1000000);
-  var ds = d.getFullYear() + "/"
-    + ("0" + (d.getMonth() + 1)).slice(-2) + "/"
-    + ("0" + d.getDate()).slice(-2);
-  return ds;
-}
-
-function traverse(path, object, ta, cl) {
-  for (key in object) {
-    value = object[key];
-    if (typeof value === 'object') {
-      if (value.subtype === 'set') {
-        path.push(key);
-        var hierarchy = path.join("->");
-        for (k in value.values) {
-          var v = value.values[k];
-          if (v.created) {
-            console.log(v.created)
-            cl.push([get_datestring(v.created), "add", hierarchy, k]);
-          }
-          if (v.rp) {
-            ta.push([hierarchy, k, v.cnt, v.rp, v.dist, v.full]);
-          }
-        }
-        for (k in value.removed) {
-          var v = value.removed[k];
-          cl.push([get_datestring(v), "delete", hierarchy, k])
-        }
-        path.pop();
-      } else {
-        var item = typeof value.cnt === 'number';
-        if (item) path.push(key);
-        traverse(path, value, ta, cl)
-        if (item) path.pop();
-      }
-    }
-  }
-}
-
-function load(schema) {
-  ta = [ ];
-  cl = [ ];
-  path = [ ];
-  traverse(path, schema, ta, cl);
-
-  $('#anomalies').DataTable( {
-    data: ta,
-    order: [ [4, "desc"] ],
-    columns: [
-    { title: "Hierarchy" },
-    { title: "Value" },
-    { title: "Count" },
-    { title: "Relative Percentage" },
-    { title: "Distance" },
-    { title: "%Full" }
-      ]
-  });
-
-  $('#changelog').DataTable( {
-    data: cl,
-    order: [ [0, "desc"] ],
-    columns: [
-    { title: "Date" },
-    { title: "Action" },
-    { title: "Hierarchy" },
-    { title: "Value" }
-      ]
-  });
-
-  var url = new URL(window.location);
-  select_view(url.hash)
-}
-
-function select_view(hash) {
-  var ta = document.getElementById("ta");
-  var cl = document.getElementById("cl");
-  if (hash == '#changelog') {
-    ta.style = "display:none";
-    cl.style = "display:block";
-  } else {
-    ta.style = "display:block";
-    cl.style = "display:none";
-  }
-}
-</script>
-</head>
-<body onload="fetch(']]
-
-viewer1 =
-[[', load);">
-<p>
-<a href="#anomalies" onclick="select_view(); return true;">Top Anomalies</a>
-|
-<a href="#changelog" onclick="select_view('#changelog'); return true;">Change Log</a>
-</p>
-<div id="ta" style="display:none">
-    <h1>Top Anomalies</h1>
-    <table id="anomalies" class="display" width="100%">
-    </table>
-</div>
-<div id="cl" style="display:none">
-    <h1>Change Log</h1>
-    <table id="changelog" class="display" width="100%">
-    </table>
-</div>
-</body>
-</html>
-]]

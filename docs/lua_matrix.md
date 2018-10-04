@@ -114,7 +114,6 @@ Returns an array of values containing column entries for the row.
 *Returns*
 - Array of values or nil if the request was out of bounds.
 
-
 #### clear_row
 ```lua
 m:clear_row(1)
@@ -127,7 +126,6 @@ Zeros out the specified row in the matrix.
 
 *Returns*
 - none
-
 
 #### pcc
 ```lua
@@ -145,6 +143,36 @@ the matrix.
 - pcc (number/nil) Pearson's correlation coefficient.
 - index (int/nil) Row index of the best match.
 
+#### merge
+```lua
+m:merge(m1, op)
+```
+
+Merges one matrix into another based on the specified operation.
+
+*Arguments*
+- m1 (userdata) Source matrix to merge.
+- op (string/nil) One of the following entries:
+    - add (default) - unlike the float add function NAN is ignored so merge will
+      not clobber an initialized value in the destination matrix.
+    - set
+
+*Return*
+- none
+
+#### sum
+```lua
+sum = m:sum(10)
+-- sum == 23
+```
+
+Returns the sum of the specified matrix row.
+
+*Arguments*
+- row (unsigned) Matrix row to compute the sum on (NAN is ignored).
+
+*Returns*
+- sum (number)
 
 #### fromstring
 ```lua

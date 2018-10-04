@@ -317,7 +317,6 @@ static int ts_stats_int(lua_State *lua)
   int idx = get_idx(ts, ns);
   if (idx == -1) {return 0;}
 
-  lua_createtable(lua, n, 0);
   double result = 0;
   int rows = 0;
   switch (type) {
