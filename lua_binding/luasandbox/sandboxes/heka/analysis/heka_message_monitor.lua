@@ -24,7 +24,7 @@ sample_interval = 3600
 
 exclude = nil -- default table of field names to exclude from monitoring/analyis e.g. `{"Pid", "Fields[Date]"}`
 -- telemetry
--- exclude = {"Hostname", "Pid", "Severity", "Payload", "EnvVersion", "Fields[content]", "Fields[Date]", "Fields[sampleId]", "Fields[DecodeErrorDetail]"}
+-- exclude = {"Hostname", "Pid", "Severity", "Payload", "EnvVersion", "Fields[content]", "Fields[Date]", "Fields[sampleId]", "Fields[DecodeErrorDetail], "Fields[submissionDate]"}
 
 
 alert = {
@@ -38,13 +38,14 @@ alert = {
     -- pcc          = 0.3,  -- default minimum correlation coefficient (less than or equal alerts)
     -- submissions  = 1000, -- default minimum number of submissions before alerting in at least the current and one previous interval
     active          = sample_interval  * 5, -- number of seconds after field creation before alerting
+    -- duplicate_change = 5 -- +/- change in the duplicate percentage range i.e. if the duplicate percentage range is 10-12 this will alert if the value goes outside of 5-17 (if it slowly creeps up or down this will not alert).
   }}
 
 ```
 
 ## Analysis Behavior (based on subtype)
 - `unknown` - no analysis
-- `unique`  - min/max lengths, hyperloglog percent duplicate calculation
+- `unique`  - hyperloglog percent duplicate calculation (per interval)
 - `range`   - histogram analysis of the range
 - `set`     - histogram analysis of enumerated set
 - `sparse`  - weights of each of the most frequent items are computed
@@ -56,6 +57,7 @@ require "math"
 require "os"
 require "string"
 require "table"
+require "hyperloglog"
 local alert  = require "heka.alert"
 local matrix = require "streaming_algorithms.matrix"
 local escape_json = require "lpeg.escape_sequences".escape_json
@@ -73,6 +75,7 @@ sample_interval         = sample_interval * 1e9
 local alert_pcc         = alert.get_threshold("pcc") or 0.3
 local alert_submissions = alert.get_threshold("submissions") or 1000
 local alert_active      = alert.get_threshold("active") or 3600
+local alert_dc          = alert.get_threshold("duplicate_change") or 5
 
 local exclude = read_config("exclude") or {}
 local exclude_headers
@@ -257,9 +260,38 @@ local function output_subtype(key, v, stats)
             sep = ","
         end
         add_to_payload("}")
-    elseif v.subtype == "unique" or v.subtype == "range" then
+    elseif v.subtype == "range" then
         if v.min ~= 1/0 then
             add_to_payload(string.format(',"min":%g,"max":%g', v.min, v.max))
+        end
+    elseif v.subtype == "unique" then
+        v.data:set(v.cint, 2,  v.hll:count())
+        local cdupes = 0
+        local min = 100
+        local max = 0
+        local active = 0
+        for i=1, samples do
+            local unique = v.data:get(i, 2)
+            local total  = v.data:get(i, 1)
+            local dupes  = unique / total
+            if dupes == dupes then
+                if dupes > 1 then dupes = 1 end
+                dupes = (1 - dupes) * 100
+                if i == v.cint then
+                    cdupes = dupes
+                else
+                    if dupes > max then max = dupes end
+                    if dupes < min then min = dupes end
+                    if total > alert_submissions then active = active + 1 end
+                end
+            end
+        end
+        add_to_payload(string.format(',"duplicate_pct":%.4g', cdupes))
+        if active > 1 and v.data:get(v.cint, 1) > alert_submissions
+        and (cdupes > max + alert_dc or cdupes < min - alert_dc) then
+            stats.alerts[#stats.alerts + 1] = string.format(
+                "<div>%s duplicate percentage out of range min:%.4g max:%.4g current:%.4g</div>",
+                escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), min, max, cdupes)
         end
     end
 end
@@ -325,6 +357,7 @@ end
 local function process_entry(ns, f, value, entry)
     if entry.exclude then return end
 
+    local int = math.floor(ns / sample_interval) % samples + 1
     if ns > entry.updated then entry.updated = ns end
     entry.cnt = entry.cnt + 1
     if f.value_type ~= entry.type then
@@ -365,18 +398,20 @@ local function process_entry(ns, f, value, entry)
                     entry.subtype = "unique"
                     entry.values = nil
                     entry.values_cnt = nil
+                    entry.hll = hyperloglog.new()
+                    entry.data = matrix.new(samples, 2) -- total, unique
+                    entry.cint = int
                 else
                     entry.subtype = "set"
                 end
             end
             if entry.subtype == "set" then
                 entry.data = matrix.new(samples, entry.values_cnt)
-                entry.cint = math.floor(ns / sample_interval) % samples + 1
+                entry.cint = int
             end
         end
     elseif entry.subtype == "set" then
         local v = entry.values[value]
-        local int = math.floor(ns / sample_interval) % samples + 1
         if ns == entry.updated and entry.cint ~= int then
             entry.cint = int
             entry.data:clear_row(int) -- don't worry about any intervals we may have skipped
@@ -420,6 +455,9 @@ local function process_entry(ns, f, value, entry)
                         entry.subtype = "range"
                     else
                         entry.subtype = "unique"
+                        entry.hll = hyperloglog.new()
+                        entry.data = matrix.new(samples, 2) -- total, unique
+                        entry.cint = int
                     end
                     entry.values = nil
                     entry.values_cnt = nil
@@ -429,13 +467,16 @@ local function process_entry(ns, f, value, entry)
                 entry.values_cnt = entry.values_cnt + 1
             end
         end
--- todo ideally we would look at something like the average of the size/value for unique/range
     elseif entry.subtype == "unique" then
-        if type(value) == "string" then
-            local len = #value
-            if len < entry.min then entry.min = len end
-            if len > entry.max then entry.max = len end
+        if ns == entry.updated and entry.cint ~= int then
+            entry.data:set(entry.cint, 2, entry.hll:count())
+            entry.data:set(int, 1, 0)
+            entry.data:set(int, 2, 0)
+            entry.hll:clear()
+            entry.cint = int
         end
+        entry.data:add(entry.cint, 1, 1)
+        entry.hll:add(value)
     elseif entry.subtype == "range" then
         if type(value) == "number" then
         if value < entry.min then entry.min = value end
@@ -487,6 +528,9 @@ function process_message()
             }
             if f.representation == "json" then
                 entry.subtype = "unique"
+                entry.hll = hyperloglog.new()
+                entry.data = matrix.new(samples, 2) -- total, unique
+                entry.cint = math.floor(ns / sample_interval) % samples + 1
             end
             v.fields[f.name] = entry
         end
