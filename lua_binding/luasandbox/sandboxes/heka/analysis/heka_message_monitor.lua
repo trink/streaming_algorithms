@@ -11,34 +11,36 @@ change in behavior.
 
 ## Sample Configuration
 
+The defaults are commented out.
+
 ```lua
 filename        = "heka_message_monitor.lua"
 ticker_interval = 360
 preserve_data   = true
 message_matcher = "Uuid < '\003'" -- slightly greater than a 1% sample
+timer_event_inject_limit = 1000
 
-hierarchy       = {"Logger", "Type", "EnvVersion"} -- default
-max_set_size    = 255 -- default
-samples         = 25
-sample_interval = 3600
-
-exclude = nil -- default table of field names to exclude from monitoring/analyis e.g. `{"Pid", "Fields[Date]"}`
--- telemetry
--- exclude = {"Hostname", "Pid", "Severity", "Payload", "EnvVersion", "Fields[content]", "Fields[Date]", "Fields[sampleId]", "Fields[DecodeErrorDetail], "Fields[submissionDate]"}
-
+-- hierarchy           = {"Logger"}
+-- max_set_size        = 255
+-- samples             = 25
+-- sample_interval     = 3600
+-- histogram_buckets   = 25
+-- exclude             = nil -- table of field names to exclude from monitoring/analyis
+                             -- e.g. `{"Pid", "Fields[Date]"}` hierarchy will always be appended
+-- preservation_version = 1  -- increase when altering any of the above configuration values
 
 alert = {
-  disabled  = false,
+--  disabled  = false,
   prefix    = true,
-  throttle  = 90,
+--  throttle  = 90,
   modules   = {
-    email = {recipients = {"trink@mozilla.com"}},
+    email = {recipients = {"example@example.com"}},
   },
   thresholds = {
-    -- pcc          = 0.3,  -- default minimum correlation coefficient (less than or equal alerts)
-    -- submissions  = 1000, -- default minimum number of submissions before alerting in at least the current and one previous interval
-    active          = sample_interval  * 5, -- number of seconds after field creation before alerting
-    -- duplicate_change = 5 -- +/- change in the duplicate percentage range i.e. if the duplicate percentage range is 10-12 this will alert if the value goes outside of 5-17 (if it slowly creeps up or down this will not alert).
+    -- pcc              = 0.3,  -- minimum correlation coefficient (less than or equal alerts)
+    -- submissions      = 1000, -- minimum number of submissions before alerting in at least the current and two previous interval
+    -- duplicate_change = 5, -- +/- change in the duplicate percentage range i.e. if the duplicate percentage range is 10-12 this will alert if the value goes outside of 5-17 (if it slowly creeps up or down this will not alert).
+    -- active           = sample_interval  * 5, -- number of seconds after field creation before alerting
   }}
 
 ```
@@ -47,7 +49,7 @@ alert = {
 - `unknown` - no analysis
 - `unique`  - hyperloglog percent duplicate calculation (per interval)
 - `range`   - histogram analysis of the range
-- `set`     - histogram analysis of enumerated set
+- `set`     - histogram analysis of the enumerated set
 - `sparse`  - weights of each of the most frequent items are computed
 --]]
 _PRESERVATION_VERSION = read_config("preservation_version") or 1
@@ -58,15 +60,18 @@ require "os"
 require "string"
 require "table"
 require "hyperloglog"
-local alert  = require "heka.alert"
-local matrix = require "streaming_algorithms.matrix"
-local escape_json = require "lpeg.escape_sequences".escape_json
-local escape_html = require "lpeg.escape_sequences".escape_html
 
-local hierarchy         = read_config("hierarchy") or {"Logger", "Type", "EnvVersion"}
+local alert         = require "heka.alert"
+local matrix        = require "streaming_algorithms.matrix"
+local p2            = require "streaming_algorithms.p2"
+local escape_json   = require "lpeg.escape_sequences".escape_json
+local escape_html   = require "lpeg.escape_sequences".escape_html
+
+local hierarchy         = read_config("hierarchy") or {"Logger"}
 local levels            = #hierarchy - 1
 local leaf              = hierarchy[levels + 1];
 
+local histogram_buckets = read_config("histogram_buckets") or 25
 local max_set_size      = read_config("max_set_size") or 255
 local samples           = read_config("samples") or 25
 local sample_interval   = read_config("sample_interval") or 3600
@@ -74,10 +79,19 @@ sample_interval         = sample_interval * 1e9
 
 local alert_pcc         = alert.get_threshold("pcc") or 0.3
 local alert_submissions = alert.get_threshold("submissions") or 1000
-local alert_active      = alert.get_threshold("active") or 3600
+local alert_active      = alert.get_threshold("active")
+if not alert_active then
+    alert_active = sample_interval * 5
+else
+    alert_active = alert_active * 1e9
+end
 local alert_dc          = alert.get_threshold("duplicate_change") or 5
 
 local exclude = read_config("exclude") or {}
+for i,v in ipairs(hierarchy) do
+    exclude[#exclude + 1] = v
+end
+
 local exclude_headers
 local exclude_fields
 for i,v in ipairs(exclude) do
@@ -117,9 +131,7 @@ local function init_header()
         cnt         = 0,
         values_cnt  = 0,
         values      = {},
-        subtype     = "unknown",
-        min         = math.huge,
-        max         = -math.huge
+        subtype     = "unknown"
     }
 end
 
@@ -169,13 +181,15 @@ local function get_table(t, key)
     return v
 end
 
+
 local bar_div = [[
 <div id="%s""</div>
 <script type="text/javascript">
 MG.data_graphic({
     title: '%s',
     data: [%s],
-    chart_type: 'bar',
+    binned: true,
+    chart_type: 'histogram',
     width: %d,
     height: 320,
     bottom: 60,
@@ -185,8 +199,9 @@ MG.data_graphic({
     rotate_x_labels: 45
 });</script>
 ]]
-local function debug_alert(v, pcc, row, closest, title, alerts)
+local function debug_alert(v, pcc, closest, title, alerts)
     local cnt = #alerts
+    local row = v.cint
     local curr = v.data:get_row(row)
     local cdata = {}
     local labels = {}
@@ -216,11 +231,48 @@ local function debug_alert(v, pcc, row, closest, title, alerts)
 end
 
 
+local function debug_alert_range(v, pcc, closest, title, alerts)
+    local cnt = #alerts
+    local row = v.cint
+    local curr = v.data:get_row(row)
+    local cdata = {}
+    local labels = {}
+    for x,y in ipairs(curr) do
+        if y ~= y then y = 0 end
+        cdata[x] = string.format('{x:%d,y:%g}', x, y)
+    end
+
+    local width = math.floor(1000 / histogram_buckets)
+    if width < 25 then width = 25 end
+    width = width * histogram_buckets
+
+    local div = string.format("current%d", cnt)
+    local c = string.format(bar_div, div, string.format("current = %d", row), table.concat(cdata, ","), width, div);
+
+    local prev = v.data:get_row(closest)
+    local pdata = {}
+    for x,y in ipairs(prev) do
+        if y ~= y then y = 0 end
+        pdata[x] = string.format('{x:%d,y:%g}', x, y)
+    end
+
+    div = string.format("closest%d", cnt)
+    local p = string.format(bar_div, div, string.format("closest index = %d", closest), table.concat(pdata, ","), width, div);
+    alerts[cnt + 1] = string.format("<h1>%s</h1>\n<span>Pearson's Correlation Coefficient:%g</span>\n%s%s", title, pcc, c, p)
+end
+
+
 local function output_subtype(key, v, stats)
     local sep = ""
     add_to_payload(string.format(',"subtype":"%s"', v.subtype))
+
+    if v.subtype ~= "unknown" then
+        add_to_payload(string.format(',"created":%d,"updated":%d,"alerted":"%s","cint":%d',
+                                     v.created, v.updated, tostring(v.alerted), v.cint))
+    end
+
     if v.subtype == "set" then
-        add_to_payload(string.format(',"created":%d,"updated":%d,"alerted":%s,"values_cnt":%d,"cint":%d,"values":{', v.created, v.updated, tostring(v.alerted), v.values_cnt, v.cint))
+        add_to_payload(string.format(',"values_cnt":%d,"values":{', v.values_cnt))
         for k, t in pairs(v.values) do
             local ks = escape_json(k)
             add_to_payload(string.format('%s"%s":{"idx":%d,"cnt":%d}', sep, ks, t.idx, t.cnt))
@@ -229,7 +281,7 @@ local function output_subtype(key, v, stats)
         add_to_payload("}")
 
         local pcc, closest
-        if v.values_cnt > 2 then pcc, closest = v.data:pcc(v.cint) end
+        if v.values_cnt > 1 then pcc, closest = v.data:pcc(v.cint) end
         if pcc then
             add_to_payload(string.format(',"pcc":%g,"closest_row":%d', pcc, closest))
             local submissions = v.data:sum(v.cint)
@@ -238,17 +290,16 @@ local function output_subtype(key, v, stats)
             and not v.alerted
             and v.updated - v.created > alert_active
             and #stats.alerts < 25 then
-                local alert = false
+                local active = 0
                 for i=1, samples do
-                    -- confirm there is at least one other row with the minimum number of submissions
                     if i ~= v.cint and v.data:sum(i) >= alert_submissions then
-                        alert = true
+                        active = active + 1
                         break
                     end
                 end
-                if alert then
+                if active > 1 then
                     v.alerted = true
-                    debug_alert(v, pcc, v.cint, closest, escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), stats.alerts)
+                    debug_alert(v, pcc, closest, escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), stats.alerts)
                 end
             end
         end
@@ -261,8 +312,32 @@ local function output_subtype(key, v, stats)
         end
         add_to_payload("}")
     elseif v.subtype == "range" then
-        if v.min ~= 1/0 then
-            add_to_payload(string.format(',"min":%g,"max":%g', v.min, v.max))
+        for i=1, histogram_buckets do
+            v.data:set(v.cint, i, v.p2:estimate(i-1))
+        end
+        v.counts:set(v.cint, 1, v.p2:count(histogram_buckets - 1))
+        add_to_payload(string.format(',"min":%g,"max":%g', v.p2:estimate(0), v.p2:estimate(histogram_buckets - 1)))
+        local pcc, closest = v.data:pcc(v.cint)
+        if pcc then
+            add_to_payload(string.format(',"pcc":%g,"closest_row":%d', pcc, closest))
+            local submissions = v.counts:get(v.cint, 1)
+            if submissions >= alert_submissions
+            and pcc <= alert_pcc
+            and not v.alerted
+            and v.updated - v.created > alert_active
+            and #stats.alerts < 25 then
+                local active = 0
+                for i=1, samples do
+                    if i ~= v.cint and v.counts:get(i, 1) >= alert_submissions then
+                        active = active + 1
+                        break
+                    end
+                end
+                if active > 1 then
+                    v.alerted = true
+                    debug_alert_range(v, pcc, closest, escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), stats.alerts)
+                end
+            end
         end
     elseif v.subtype == "unique" then
         v.data:set(v.cint, 2,  v.hll:count())
@@ -287,8 +362,8 @@ local function output_subtype(key, v, stats)
             end
         end
         add_to_payload(string.format(',"duplicate_pct":%.4g', cdupes))
-        if active > 1 and v.data:get(v.cint, 1) > alert_submissions
-        and (cdupes > max + alert_dc or cdupes < min - alert_dc) then
+        if active > 1 and (cdupes > max + alert_dc or cdupes < min - alert_dc)
+        and v.data:get(v.cint, 1) > alert_submissions then
             stats.alerts[#stats.alerts + 1] = string.format(
                 "<div>%s duplicate percentage out of range min:%.4g max:%.4g current:%.4g</div>",
                 escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), min, max, cdupes)
@@ -332,7 +407,7 @@ local function output_fields(t, stats)
 end
 
 
-local function output_table(t, clevel, stats)
+local function output_sub_levels(t, clevel, stats)
     local sep = ""
     add_to_payload(string.format('"%s":{\n', escape_json(hierarchy[clevel + 1])))
     for k,v in pairs(t) do
@@ -341,7 +416,7 @@ local function output_table(t, clevel, stats)
             add_to_payload(string.format('%s"%s":{"cnt":%d,', sep, ks, v.cnt))
             stats.path[clevel + 1] = ks
             if clevel < levels then
-                output_table(v, clevel + 1, stats)
+                output_sub_levels(v, clevel + 1, stats)
             else
                 output_headers(v.headers, stats)
                 output_fields(v.fields, stats)
@@ -374,41 +449,37 @@ local function process_entry(ns, f, value, entry)
             entry.values[value] = v
         end
 
-        if type(value) == "string" then
-            local len = #value
-            if len < entry.min then entry.min = len end
-            if len > entry.max then entry.max = len end
-        elseif type(value) == "number" then
-            if value < entry.min then entry.min = value end
-            if value > entry.max then entry.max = value end
-        end
-
         if entry.cnt == max_set_size then
             local ratio = entry.cnt / entry.values_cnt
             if entry.type == 2 or entry.type == 3 then -- numeric
                 if ratio < 2 then
+                    -- just one histogram for data collection
+                    -- (i.e. old data will go into the current interval)
                     entry.subtype = "range"
-                    entry.values = nil
-                    entry.values_cnt = nil
+                    entry.p2 = p2.histogram(histogram_buckets)
+                    entry.data = matrix.new(samples, histogram_buckets, "float")
+                    entry.counts = matrix.new(samples, 1)
                 else
                     entry.subtype = "set"
                 end
             else
                 if ratio == 1 then
+                    -- just one hll for data collection
+                    -- (i.e. old data will go into the current interval)
                     entry.subtype = "unique"
-                    entry.values = nil
-                    entry.values_cnt = nil
                     entry.hll = hyperloglog.new()
                     entry.data = matrix.new(samples, 2) -- total, unique
-                    entry.cint = int
                 else
                     entry.subtype = "set"
                 end
             end
             if entry.subtype == "set" then
                 entry.data = matrix.new(samples, entry.values_cnt)
-                entry.cint = int
+            else
+                entry.values = nil
+                entry.values_cnt = nil
             end
+            entry.cint = int
         end
     elseif entry.subtype == "set" then
         local v = entry.values[value]
@@ -453,6 +524,9 @@ local function process_entry(ns, f, value, entry)
                 if entry.values_cnt == 0 then
                     if entry.type == 2 or entry.type == 3 then
                         entry.subtype = "range"
+                        entry.p2 = p2.histogram(histogram_buckets)
+                        entry.data = matrix.new(samples, histogram_buckets, "float")
+                        entry.counts = matrix.new(samples, 1)
                     else
                         entry.subtype = "unique"
                         entry.hll = hyperloglog.new()
@@ -461,6 +535,7 @@ local function process_entry(ns, f, value, entry)
                     end
                     entry.values = nil
                     entry.values_cnt = nil
+                    entry.cint = int
                 end
             else
                 entry.values[value] = 1
@@ -477,11 +552,18 @@ local function process_entry(ns, f, value, entry)
         end
         entry.data:add(entry.cint, 1, 1)
         entry.hll:add(value)
-    elseif entry.subtype == "range" then
-        if type(value) == "number" then
-        if value < entry.min then entry.min = value end
-        if value > entry.max then entry.max = value end
+    elseif entry.subtype == "range" and type(value) == "number" then
+        if ns == entry.updated and entry.cint ~= int then
+            for i=1, histogram_buckets do
+                entry.data:set(entry.cint, i, entry.p2:estimate(i - 1))
+            end
+            entry.counts:set(entry.cint, 1, entry.p2:count(histogram_buckets - 1))
+            entry.counts:set(int, 1, 0)
+            entry.data:clear_row(int)
+            entry.p2:clear()
+            entry.cint = int
         end
+        entry.p2:add(value)
     end
 end
 
@@ -521,8 +603,6 @@ function process_message()
                 repetition = #f.value > 1,
                 values_cnt = 0,
                 values = {},
-                min = math.huge,
-                max = -math.huge,
                 subtype = "unknown",
                 alerted = false
             }
@@ -539,7 +619,7 @@ function process_message()
     return 0
 end
 
-local schema_name   = "message_schema"
+local schema_name   = "schemas"
 local schema_ext    = "json"
 local alert_name    = "alerts"
 local alert_ext     = "html"
@@ -559,18 +639,32 @@ local html_fmt = [[
 function timer_event(ns, shutdown)
     if shutdown then return end
 
-    local stats = {
-        path        = {},
-        alerts      = {},
-    }
+    for k,v in pairs(schema) do
+        local stats = {
+            path        = {},
+            alerts      = {},
+        }
 
-    add_to_payload("{\n")
-    output_table(schema, 0, stats)
-    add_to_payload(string.format(',"hierarchy_levels":%d\n}', levels + 1))
-    inject_payload(schema_ext, schema_name)
+        add_to_payload(string.format('{"hierarchy_levels":%d,\n', levels + 1))
+        add_to_payload(string.format('"%s":{\n', escape_json(hierarchy[1])))
 
-    if #stats.alerts > 0 then
-        inject_payload(alert_ext, alert_name, string.format(html_fmt, table.concat(stats.alerts, "\n")))
-        alert.send(alert_name, "pcc", string.format("graphs: %s\n", alert.get_dashboard_uri(alert_name, alert_ext)))
+        local ks = escape_json(k)
+        add_to_payload(string.format('"%s":{"cnt":%d,', ks, v.cnt))
+        stats.path[1] = ks
+        if levels > 0 then
+            output_sub_levels(v, 1, stats)
+        else
+            output_headers(v.headers, stats)
+            output_fields(v.fields, stats)
+        end
+        add_to_payload("}}}\n")
+
+        inject_payload(schema_ext, string.format("%s_%s", k, schema_name))
+
+        if #stats.alerts > 0 then
+            local aname = string.format("%s_%s", k, alert_name)
+            inject_payload(alert_ext, aname, string.format(html_fmt, table.concat(stats.alerts, "\n")))
+            alert.send(aname, "pcc", string.format("graphs: %s\n", alert.get_dashboard_uri(aname, alert_ext)))
+        end
     end
 end
