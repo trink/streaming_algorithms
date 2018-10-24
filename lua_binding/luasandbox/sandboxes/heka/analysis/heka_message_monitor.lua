@@ -40,8 +40,8 @@ alert = {
     -- pcc              = 0.3,  -- minimum correlation coefficient (less than or equal alerts)
     -- submissions      = 1000, -- minimum number of submissions before alerting in at least the current and two previous interval
     -- duplicate_change = 5, -- +/- change in the duplicate percentage range i.e. if the duplicate percentage range is 10-12 this will alert if the value goes outside of 5-17 (if it slowly creeps up or down this will not alert).
-    -- active           = sample_interval  * 5, -- number of seconds after field creation before alerting
-  }}
+  }
+}
 
 ```
 
@@ -52,7 +52,7 @@ alert = {
 - `set`     - histogram analysis of the enumerated set
 - `sparse`  - weights of each of the most frequent items are computed
 --]]
-_PRESERVATION_VERSION = read_config("preservation_version") or 1
+_PRESERVATION_VERSION = (read_config("preservation_version") or 0) + 2
 schema = {}
 
 require "math"
@@ -79,12 +79,6 @@ sample_interval         = sample_interval * 1e9
 
 local alert_pcc         = alert.get_threshold("pcc") or 0.3
 local alert_submissions = alert.get_threshold("submissions") or 1000
-local alert_active      = alert.get_threshold("active")
-if not alert_active then
-    alert_active = sample_interval * 5
-else
-    alert_active = alert_active * 1e9
-end
 local alert_dc          = alert.get_threshold("duplicate_change") or 5
 
 local exclude = read_config("exclude") or {}
@@ -127,7 +121,7 @@ local function init_header()
     return {
         created     = 0,
         updated     = 0,
-        alerted     = false,
+        alerted     = 0,
         cnt         = 0,
         values_cnt  = 0,
         values      = {},
@@ -267,8 +261,8 @@ local function output_subtype(key, v, stats)
     add_to_payload(string.format(',"subtype":"%s"', v.subtype))
 
     if v.subtype ~= "unknown" then
-        add_to_payload(string.format(',"created":%d,"updated":%d,"alerted":"%s","cint":%d',
-                                     v.created, v.updated, tostring(v.alerted), v.cint))
+        add_to_payload(string.format(',"created":%d,"updated":%d,"alerted":%d,"cint":%d',
+                                     v.created, v.updated, v.alerted, v.cint))
     end
 
     if v.subtype == "set" then
@@ -287,8 +281,6 @@ local function output_subtype(key, v, stats)
             local submissions = v.data:sum(v.cint)
             if submissions >= alert_submissions
             and pcc <= alert_pcc
-            and not v.alerted
-            and v.updated - v.created > alert_active
             and #stats.alerts < 25 then
                 local active = 0
                 for i=1, samples do
@@ -298,7 +290,7 @@ local function output_subtype(key, v, stats)
                     end
                 end
                 if active > 1 then
-                    v.alerted = true
+                    v.alerted = v.alerted + 1
                     debug_alert(v, pcc, closest, escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), stats.alerts)
                 end
             end
@@ -323,8 +315,6 @@ local function output_subtype(key, v, stats)
             local submissions = v.counts:get(v.cint, 1)
             if submissions >= alert_submissions
             and pcc <= alert_pcc
-            and not v.alerted
-            and v.updated - v.created > alert_active
             and #stats.alerts < 25 then
                 local active = 0
                 for i=1, samples do
@@ -334,7 +324,7 @@ local function output_subtype(key, v, stats)
                     end
                 end
                 if active > 1 then
-                    v.alerted = true
+                    v.alerted = v.alerted + 1
                     debug_alert_range(v, pcc, closest, escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), stats.alerts)
                 end
             end
@@ -364,6 +354,7 @@ local function output_subtype(key, v, stats)
         add_to_payload(string.format(',"duplicate_pct":%.4g', cdupes))
         if active > 1 and (cdupes > max + alert_dc or cdupes < min - alert_dc)
         and v.data:get(v.cint, 1) > alert_submissions then
+            v.alerted = v.alerted + 1
             stats.alerts[#stats.alerts + 1] = string.format(
                 "<div>%s duplicate percentage out of range min:%.4g max:%.4g current:%.4g</div>",
                 escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), min, max, cdupes)
@@ -604,7 +595,7 @@ function process_message()
                 values_cnt = 0,
                 values = {},
                 subtype = "unknown",
-                alerted = false
+                alerted = 0
             }
             if f.representation == "json" then
                 entry.subtype = "unique"
