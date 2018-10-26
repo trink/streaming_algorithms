@@ -38,8 +38,8 @@ alert = {
   },
   thresholds = {
     -- pcc              = 0.3,  -- minimum correlation coefficient (less than or equal alerts)
-    -- submissions      = 1000, -- minimum number of submissions before alerting in at least the current and two previous interval
-    -- duplicate_change = 5, -- +/- change in the duplicate percentage range i.e. if the duplicate percentage range is 10-12 this will alert if the value goes outside of 5-17 (if it slowly creeps up or down this will not alert).
+    -- submissions      = 1000, -- minimum number of submissions before alerting in at least the current and two previous interval (pcc)
+    -- duplicate_change = nil, -- +/- percentage of the duplicate range i.e. 50% of a 10-12% range is +/- 1% so anything outside of 9-13% will alert allowing the range to creep and self adjust; warning this limits it to only detecting large jumps. The minimum number of submissions before alerting is 50K due to the HLL estimation error.  The alert is based on the last full hour, not the current hour, as the estimate takes a while to stabilize for some fields.
   }
 }
 
@@ -79,7 +79,9 @@ sample_interval         = sample_interval * 1e9
 
 local alert_pcc         = alert.get_threshold("pcc") or 0.3
 local alert_submissions = alert.get_threshold("submissions") or 1000
-local alert_dc          = alert.get_threshold("duplicate_change") or 5
+local alert_dc          = alert.get_threshold("duplicate_change")
+if alert_dc then alert_dc = alert_dc / 100 end
+local HLL_THRESHOLD     = 50000
 
 local exclude = read_config("exclude") or {}
 for i,v in ipairs(hierarchy) do
@@ -330,8 +332,12 @@ local function output_subtype(key, v, stats)
             end
         end
     elseif v.subtype == "unique" then
-        v.data:set(v.cint, 2,  v.hll:count())
+        local ctotal = v.data:get(v.cint, 1)
+        v.data:set(v.cint, 2, v.hll:count())
         local cdupes = 0
+        local pdupes = 0
+        local pint = v.cint - 1
+        if pint == 0 then pint = samples end
         local min = 100
         local max = 0
         local active = 0
@@ -344,20 +350,29 @@ local function output_subtype(key, v, stats)
                 dupes = (1 - dupes) * 100
                 if i == v.cint then
                     cdupes = dupes
+                elseif i == pint then
+                    pdupes = dupes
                 else
                     if dupes > max then max = dupes end
                     if dupes < min then min = dupes end
-                    if total > alert_submissions then active = active + 1 end
+                    if total >= HLL_THRESHOLD then active = active + 1 end
                 end
             end
         end
         add_to_payload(string.format(',"duplicate_pct":%.4g', cdupes))
-        if active > 1 and (cdupes > max + alert_dc or cdupes < min - alert_dc)
-        and v.data:get(v.cint, 1) > alert_submissions then
-            v.alerted = v.alerted + 1
-            stats.alerts[#stats.alerts + 1] = string.format(
-                "<div>%s duplicate percentage out of range min:%.4g max:%.4g current:%.4g</div>",
-                escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), min, max, cdupes)
+
+        if active > 1 then
+            add_to_payload(string.format(',"duplicate_min":%.4g,"duplicate_max":%.4g', min, max))
+            if not alert_dc then return end
+
+            local delta = (max - min) * alert_dc
+            if v.data:get(pint, 1) >= HLL_THRESHOLD
+            and (pdupes > max + delta or pdupes < min - delta) then
+                v.alerted = v.alerted + 1
+                stats.dupes[#stats.dupes + 1] = string.format(
+                    "%s duplicate percentage out of range min:%.4g max:%.4g previous_hour:%.4g",
+                    string.format("%s->%s", table.concat(stats.path, "->"), tostring(key)), min, max, pdupes)
+            end
         end
     end
 end
@@ -634,6 +649,7 @@ function timer_event(ns, shutdown)
         local stats = {
             path        = {},
             alerts      = {},
+            dupes       = {},
         }
 
         add_to_payload(string.format('{"hierarchy_levels":%d,\n', levels + 1))
@@ -651,6 +667,11 @@ function timer_event(ns, shutdown)
         add_to_payload("}}}\n")
 
         inject_payload(schema_ext, string.format("%s_%s", k, schema_name))
+
+        if #stats.dupes > 0 then
+            local aname = string.format("%s_%s_duplicate", k, alert_name)
+            alert.send(aname, "duplicate", string.format("%s", table.concat(stats.dupes, "\n")))
+        end
 
         if #stats.alerts > 0 then
             local aname = string.format("%s_%s", k, alert_name)
