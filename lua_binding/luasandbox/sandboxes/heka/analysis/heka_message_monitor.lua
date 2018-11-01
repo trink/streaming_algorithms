@@ -74,6 +74,7 @@ local leaf              = hierarchy[levels + 1];
 local histogram_buckets = read_config("histogram_buckets") or 25
 local max_set_size      = read_config("max_set_size") or 255
 local samples           = read_config("samples") or 25
+assert(samples > 4, "samples must be > 4")
 local sample_interval   = read_config("sample_interval") or 3600
 sample_interval         = sample_interval * 1e9
 
@@ -82,6 +83,8 @@ local alert_submissions = alert.get_threshold("submissions") or 1000
 local alert_dc          = alert.get_threshold("duplicate_change")
 if alert_dc then alert_dc = alert_dc / 100 end
 local HLL_THRESHOLD     = 50000
+local alert_active      = sample_interval * samples
+local alert_samples     = math.floor(samples / 2)
 
 local exclude = read_config("exclude") or {}
 for i,v in ipairs(hierarchy) do
@@ -291,7 +294,9 @@ local function output_subtype(key, v, stats)
                         break
                     end
                 end
-                if active > 1 then
+                if active > alert_samples
+                and v.updated - v.created >= alert_active
+                and v.updated % sample_intervals / sample_intervals > 0.25 then
                     v.alerted = v.alerted + 1
                     debug_alert(v, pcc, closest, escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), stats.alerts)
                 end
@@ -325,17 +330,19 @@ local function output_subtype(key, v, stats)
                         break
                     end
                 end
-                if active > 1 then
+                if active > alert_samples
+                and v.updated - v.created >= alert_active
+                and v.updated % sample_intervals / sample_intervals > 0.25 then
                     v.alerted = v.alerted + 1
                     debug_alert_range(v, pcc, closest, escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), stats.alerts)
                 end
             end
         end
     elseif v.subtype == "unique" then
-        local ctotal = v.data:get(v.cint, 1)
         v.data:set(v.cint, 2, v.hll:count())
         local cdupes = 0
         local pdupes = 0
+        local ptotal = 0
         local pint = v.cint - 1
         if pint == 0 then pint = samples end
         local min = 100
@@ -352,6 +359,7 @@ local function output_subtype(key, v, stats)
                     cdupes = dupes
                 elseif i == pint then
                     pdupes = dupes
+                    ptotal = total
                 else
                     if dupes > max then max = dupes end
                     if dupes < min then min = dupes end
@@ -363,11 +371,14 @@ local function output_subtype(key, v, stats)
 
         if active > 1 then
             add_to_payload(string.format(',"duplicate_min":%.4g,"duplicate_max":%.4g', min, max))
-            if not alert_dc then return end
+        end
 
+        if alert_dc
+        and ptotal >= HLL_THRESHOLD
+        and active > alert_samples
+        and v.updated - v.created >= alert_active then
             local delta = (max - min) * alert_dc
-            if v.data:get(pint, 1) >= HLL_THRESHOLD
-            and (pdupes > max + delta or pdupes < min - delta) then
+            if pdupes > max + delta or pdupes < min - delta then
                 v.alerted = v.alerted + 1
                 stats.dupes[#stats.dupes + 1] = string.format(
                     "%s duplicate percentage out of range min:%.4g max:%.4g previous_hour:%.4g",
