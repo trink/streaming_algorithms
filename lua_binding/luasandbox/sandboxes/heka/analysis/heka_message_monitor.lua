@@ -315,7 +315,11 @@ local function output_subtype(key, v, stats)
             v.data:set(v.cint, i, v.p2:estimate(i-1))
         end
         v.counts:set(v.cint, 1, v.p2:count(histogram_buckets - 1))
-        add_to_payload(string.format(',"min":%g,"max":%g', v.p2:estimate(0), v.p2:estimate(histogram_buckets - 1)))
+        local min = v.p2:estimate(0)
+        if min ~= min then min = 0 end
+        local max = v.p2:estimate(histogram_buckets - 1)
+        if max ~= max then max = 0 end
+        add_to_payload(string.format(',"min":%g,"max":%g', min, max))
         local pcc, closest = v.data:pcc(v.cint)
         if pcc then
             add_to_payload(string.format(',"pcc":%g,"closest_row":%d', pcc, closest))
