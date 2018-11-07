@@ -365,9 +365,11 @@ local function output_subtype(key, v, stats)
                     pdupes = dupes
                     ptotal = total
                 else
-                    if dupes > max then max = dupes end
-                    if dupes < min then min = dupes end
-                    if total >= HLL_THRESHOLD then active = active + 1 end
+                    if total >= HLL_THRESHOLD then
+                        if dupes > max then max = dupes end
+                        if dupes < min then min = dupes end
+                        active = active + 1
+                    end
                 end
             end
         end
@@ -381,7 +383,10 @@ local function output_subtype(key, v, stats)
         and ptotal >= HLL_THRESHOLD
         and active > alert_samples
         and v.updated - v.created >= alert_active then
-            local delta = (max - min) * alert_dc
+            -- scale out the delta if the alert is noisy
+            -- this is to address a high number of alerts due 'normal' bursty fluctuation over time
+            -- i.e. normal 1-2% first alert >2.5% second >3%, third >3.5%
+            local delta = (max - min) * alert_dc * (v.alerted + 1)
             if pdupes > max + delta or pdupes < min - delta then
                 v.alerted = v.alerted + 1
                 stats.dupes[#stats.dupes + 1] = string.format(
