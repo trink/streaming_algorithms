@@ -69,7 +69,7 @@ local escape_html   = require "lpeg.escape_sequences".escape_html
 
 local hierarchy         = read_config("hierarchy") or {"Logger"}
 local levels            = #hierarchy - 1
-local leaf              = hierarchy[levels + 1];
+local leaf              = hierarchy[levels + 1]
 
 local histogram_buckets = read_config("histogram_buckets") or 25
 local max_set_size      = read_config("max_set_size") or 255
@@ -187,8 +187,7 @@ local bar_div = [[
 MG.data_graphic({
     title: '%s',
     data: [%s],
-    binned: true,
-    chart_type: 'histogram',
+    chart_type: 'bar',
     width: %d,
     height: 320,
     bottom: 60,
@@ -216,7 +215,7 @@ local function debug_alert(v, pcc, closest, title, alerts)
     width = width * v.values_cnt
 
     local div = string.format("current%d", cnt)
-    local c = string.format(bar_div, div, string.format("current = %d", row), table.concat(cdata, ","), width, div);
+    local c = string.format(bar_div, div, string.format("current = %d", row), table.concat(cdata, ","), width, div)
 
     local prev = v.data:get_row(closest)
     local pdata = {}
@@ -225,11 +224,28 @@ local function debug_alert(v, pcc, closest, title, alerts)
     end
 
     div = string.format("closest%d", cnt)
-    local p = string.format(bar_div, div, string.format("closest index = %d", closest), table.concat(pdata, ","), width, div);
+    local p = string.format(bar_div, div, string.format("closest index = %d", closest), table.concat(pdata, ","), width, div)
     alerts[cnt + 1] = string.format("<h1>%s</h1>\n<span>Pearson's Correlation Coefficient:%g</span>\n%s%s", title, pcc, c, p)
 end
 
 
+local hist_div = [[
+<div id="%s""</div>
+<script type="text/javascript">
+MG.data_graphic({
+    title: '%s',
+    data: [%s],
+    binned: true,
+    chart_type: 'histogram',
+    width: %d,
+    height: 320,
+    bottom: 60,
+    target: '#%s',
+    x_accessor: 'x',
+    y_accessor: 'y',
+    rotate_x_labels: 45
+});</script>
+]]
 local function debug_alert_range(v, pcc, closest, title, alerts)
     local cnt = #alerts
     local row = v.cint
@@ -246,7 +262,7 @@ local function debug_alert_range(v, pcc, closest, title, alerts)
     width = width * histogram_buckets
 
     local div = string.format("current%d", cnt)
-    local c = string.format(bar_div, div, string.format("current = %d", row), table.concat(cdata, ","), width, div);
+    local c = string.format(hist_div, div, string.format("current = %d", row), table.concat(cdata, ","), width, div)
 
     local prev = v.data:get_row(closest)
     local pdata = {}
@@ -256,7 +272,7 @@ local function debug_alert_range(v, pcc, closest, title, alerts)
     end
 
     div = string.format("closest%d", cnt)
-    local p = string.format(bar_div, div, string.format("closest index = %d", closest), table.concat(pdata, ","), width, div);
+    local p = string.format(hist_div, div, string.format("closest index = %d", closest), table.concat(pdata, ","), width, div)
     alerts[cnt + 1] = string.format("<h1>%s</h1>\n<span>Pearson's Correlation Coefficient:%g</span>\n%s%s", title, pcc, c, p)
 end
 
@@ -525,11 +541,24 @@ local function process_entry(ns, f, value, entry)
                 entry.data = m
                 entry.values[value] = {idx = entry.values_cnt, cnt = 1}
             else
-                entry.subtype = "sparse"
-                for k,v in pairs(entry.values) do
-                    entry.values[k] = v.cnt;
+                if entry.type == 2 or entry.type == 3 then
+                    entry.subtype = "range"
+                    entry.p2 = p2.histogram(histogram_buckets)
+                    entry.data = matrix.new(samples, histogram_buckets, "float")
+                    entry.counts = matrix.new(samples, 1)
+                    for k,v in pairs(entry.values) do
+                        entry.counts:add(entry.cint, 1, v.cnt)
+                        for i=1, v.cnt do
+                            entry.p2:add(k)
+                        end
+                    end
+                else
+                    entry.subtype = "sparse"
+                    for k,v in pairs(entry.values) do
+                        entry.values[k] = v.cnt
+                    end
+                    entry.data = nil
                 end
-                entry.data = nil
             end
         end
     elseif entry.subtype == "sparse" then
@@ -548,17 +577,10 @@ local function process_entry(ns, f, value, entry)
                     end
                 end
                 if entry.values_cnt == 0 then
-                    if entry.type == 2 or entry.type == 3 then
-                        entry.subtype = "range"
-                        entry.p2 = p2.histogram(histogram_buckets)
-                        entry.data = matrix.new(samples, histogram_buckets, "float")
-                        entry.counts = matrix.new(samples, 1)
-                    else
-                        entry.subtype = "unique"
-                        entry.hll = hyperloglog.new()
-                        entry.data = matrix.new(samples, 2) -- total, unique
-                        entry.cint = int
-                    end
+                    entry.subtype = "unique"
+                    entry.hll = hyperloglog.new()
+                    entry.data = matrix.new(samples, 2) -- total, unique
+                    entry.cint = int
                     entry.values = nil
                     entry.values_cnt = nil
                     entry.cint = int
