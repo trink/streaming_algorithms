@@ -24,7 +24,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">streaming_algorithms
-   &#160;<span id="projectnumber">0.0.4</span>
+   &#160;<span id="projectnumber">0.0.5</span>
    </div>
    <div id="projectbrief">A collection of streaming data algorithms</div>
   </td>
@@ -102,8 +102,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 Include dependency graph for matrix.h:</div>
 <div class="dyncontent">
 <div class="center"><img src="matrix_8h__incl.png" border="0" usemap="#include_2matrix_8h" alt=""/></div>
-<map name="include_2matrix_8h" id="include_2matrix_8h">
-</map>
 </div>
 </div>
 <p><a href="matrix_8h_source.html">Go to the source code of this file.</a></p>
@@ -112,42 +110,76 @@ Include dependency graph for matrix.h:</div>
 Typedefs</h2></td></tr>
 <tr class="memitem:a37a787ef181718a42c33e4d046ad2116"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="matrix_8h.html#a37a787ef181718a42c33e4d046ad2116">sa_matrix_int</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a37a787ef181718a42c33e4d046ad2116">sa_matrix_int</a></td></tr>
 <tr class="separator:a37a787ef181718a42c33e4d046ad2116"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:addc527cff8bce4957bc9c98ca0da064c"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a></td></tr>
+<tr class="separator:addc527cff8bce4957bc9c98ca0da064c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a56c95aa6d239c8e9f62954db751e291b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="matrix_8h.html#a37a787ef181718a42c33e4d046ad2116">sa_matrix_int</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a56c95aa6d239c8e9f62954db751e291b">sa_create_matrix_int</a> (int rows, int cols)</td></tr>
 <tr class="memdesc:a56c95aa6d239c8e9f62954db751e291b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates and initializes the data structure.  <a href="#a56c95aa6d239c8e9f62954db751e291b">More...</a><br /></td></tr>
 <tr class="separator:a56c95aa6d239c8e9f62954db751e291b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a965bba1afee5109d2f0612056f6a46d3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a965bba1afee5109d2f0612056f6a46d3">sa_create_matrix_flt</a> (int rows, int cols)</td></tr>
+<tr class="separator:a965bba1afee5109d2f0612056f6a46d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6a00138de0c9c283f0236dd550604b1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#ad6a00138de0c9c283f0236dd550604b1">sa_init_matrix_int</a> (<a class="el" href="matrix_8h.html#a37a787ef181718a42c33e4d046ad2116">sa_matrix_int</a> *m)</td></tr>
 <tr class="memdesc:ad6a00138de0c9c283f0236dd550604b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Zeros out the matrix.  <a href="#ad6a00138de0c9c283f0236dd550604b1">More...</a><br /></td></tr>
 <tr class="separator:ad6a00138de0c9c283f0236dd550604b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb8474f69db8d9947c1d7ff082b8673b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#aeb8474f69db8d9947c1d7ff082b8673b">sa_init_matrix_flt</a> (<a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *m)</td></tr>
+<tr class="separator:aeb8474f69db8d9947c1d7ff082b8673b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0029bcecb6c6319ea5201923bc8ad931"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a0029bcecb6c6319ea5201923bc8ad931">sa_init_matrix_row_int</a> (<a class="el" href="matrix_8h.html#a37a787ef181718a42c33e4d046ad2116">sa_matrix_int</a> *m, int row)</td></tr>
-<tr class="memdesc:a0029bcecb6c6319ea5201923bc8ad931"><td class="mdescLeft">&#160;</td><td class="mdescRight">Zeros out the specified matric row.  <a href="#a0029bcecb6c6319ea5201923bc8ad931">More...</a><br /></td></tr>
+<tr class="memdesc:a0029bcecb6c6319ea5201923bc8ad931"><td class="mdescLeft">&#160;</td><td class="mdescRight">Zeros out the specified matrix row.  <a href="#a0029bcecb6c6319ea5201923bc8ad931">More...</a><br /></td></tr>
 <tr class="separator:a0029bcecb6c6319ea5201923bc8ad931"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81122ec074058e123cddc56c5e56f43c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a81122ec074058e123cddc56c5e56f43c">sa_init_matrix_row_flt</a> (<a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *m, int row)</td></tr>
+<tr class="separator:a81122ec074058e123cddc56c5e56f43c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4269576b6cbde79953827b5aa9e78cd3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a4269576b6cbde79953827b5aa9e78cd3">sa_add_matrix_int</a> (<a class="el" href="matrix_8h.html#a37a787ef181718a42c33e4d046ad2116">sa_matrix_int</a> *m, int row, int col, int v)</td></tr>
 <tr class="memdesc:a4269576b6cbde79953827b5aa9e78cd3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds the specified value to the matrix.  <a href="#a4269576b6cbde79953827b5aa9e78cd3">More...</a><br /></td></tr>
 <tr class="separator:a4269576b6cbde79953827b5aa9e78cd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9236d0fbcd4169381c3fb005ffae614"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#ad9236d0fbcd4169381c3fb005ffae614">sa_add_matrix_flt</a> (<a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *m, int row, int col, float v)</td></tr>
+<tr class="separator:ad9236d0fbcd4169381c3fb005ffae614"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f4bc13e5b0489314d4fa7273eb26b64"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a8f4bc13e5b0489314d4fa7273eb26b64">sa_set_matrix_int</a> (<a class="el" href="matrix_8h.html#a37a787ef181718a42c33e4d046ad2116">sa_matrix_int</a> *m, int row, int col, int v)</td></tr>
 <tr class="memdesc:a8f4bc13e5b0489314d4fa7273eb26b64"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the time series row to the specified value.  <a href="#a8f4bc13e5b0489314d4fa7273eb26b64">More...</a><br /></td></tr>
 <tr class="separator:a8f4bc13e5b0489314d4fa7273eb26b64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa217404dd98c06ad54307aebc145ae48"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#aa217404dd98c06ad54307aebc145ae48">sa_set_matrix_flt</a> (<a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *m, int row, int col, float v)</td></tr>
+<tr class="separator:aa217404dd98c06ad54307aebc145ae48"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a984ab2a17fe8488025e22183149883ba"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a984ab2a17fe8488025e22183149883ba">sa_get_matrix_int</a> (<a class="el" href="matrix_8h.html#a37a787ef181718a42c33e4d046ad2116">sa_matrix_int</a> *m, int row, int cols)</td></tr>
 <tr class="memdesc:a984ab2a17fe8488025e22183149883ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the value of the time series row.  <a href="#a984ab2a17fe8488025e22183149883ba">More...</a><br /></td></tr>
 <tr class="separator:a984ab2a17fe8488025e22183149883ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8d4128a9e4814fe8fb4d0f640d2fe0e"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#ac8d4128a9e4814fe8fb4d0f640d2fe0e">sa_get_matrix_flt</a> (<a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *m, int row, int cols)</td></tr>
+<tr class="separator:ac8d4128a9e4814fe8fb4d0f640d2fe0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14ff864589e5783ec009701a53a812df"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a14ff864589e5783ec009701a53a812df">sa_destroy_matrix_int</a> (<a class="el" href="matrix_8h.html#a37a787ef181718a42c33e4d046ad2116">sa_matrix_int</a> *m)</td></tr>
 <tr class="memdesc:a14ff864589e5783ec009701a53a812df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free the associated memory.  <a href="#a14ff864589e5783ec009701a53a812df">More...</a><br /></td></tr>
 <tr class="separator:a14ff864589e5783ec009701a53a812df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61795a9767d0af12db764b2fcaba3c50"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a61795a9767d0af12db764b2fcaba3c50">sa_destroy_matrix_flt</a> (<a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *m)</td></tr>
+<tr class="separator:a61795a9767d0af12db764b2fcaba3c50"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c0f5e2dce3e4ac1d29e5f5b89cc3183"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a0c0f5e2dce3e4ac1d29e5f5b89cc3183">sa_serialize_matrix_int</a> (<a class="el" href="matrix_8h.html#a37a787ef181718a42c33e4d046ad2116">sa_matrix_int</a> *m, size_t *len)</td></tr>
 <tr class="memdesc:a0c0f5e2dce3e4ac1d29e5f5b89cc3183"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize the internal state to a buffer.  <a href="#a0c0f5e2dce3e4ac1d29e5f5b89cc3183">More...</a><br /></td></tr>
 <tr class="separator:a0c0f5e2dce3e4ac1d29e5f5b89cc3183"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e38422ba61d75f8b28f6dd32b24d68b"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a0e38422ba61d75f8b28f6dd32b24d68b">sa_serialize_matrix_flt</a> (<a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *m, size_t *len)</td></tr>
+<tr class="separator:a0e38422ba61d75f8b28f6dd32b24d68b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa15d0eaafa5ad4884dbd7fdf49d07a93"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#aa15d0eaafa5ad4884dbd7fdf49d07a93">sa_deserialize_matrix_int</a> (<a class="el" href="matrix_8h.html#a37a787ef181718a42c33e4d046ad2116">sa_matrix_int</a> *m, const char *buf, size_t len)</td></tr>
 <tr class="memdesc:aa15d0eaafa5ad4884dbd7fdf49d07a93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Restores the internal state from the serialized output.  <a href="#aa15d0eaafa5ad4884dbd7fdf49d07a93">More...</a><br /></td></tr>
 <tr class="separator:aa15d0eaafa5ad4884dbd7fdf49d07a93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a159de3b431c84bd64aa135210b92c984"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="matrix_8h.html#a159de3b431c84bd64aa135210b92c984">sa_deserialize_matrix_flt</a> (<a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *m, const char *buf, size_t len)</td></tr>
+<tr class="separator:a159de3b431c84bd64aa135210b92c984"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Matrix data storage. </p>
 
 <p>Definition in file <a class="el" href="matrix_8h_source.html">matrix.h</a>.</p>
 </div><h2 class="groupheader">Typedef Documentation</h2>
+<a class="anchor" id="addc527cff8bce4957bc9c98ca0da064c"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> <a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Definition at line <a class="el" href="matrix_8h_source.html#l00016">16</a> of file <a class="el" href="matrix_8h_source.html">matrix.h</a>.</p>
+
+</div>
+</div>
 <a class="anchor" id="a37a787ef181718a42c33e4d046ad2116"></a>
 <div class="memitem">
 <div class="memproto">
@@ -163,6 +195,44 @@ Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
+<a class="anchor" id="ad9236d0fbcd4169381c3fb005ffae614"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float sa_add_matrix_flt </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>row</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>col</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>v</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a class="anchor" id="a4269576b6cbde79953827b5aa9e78cd3"></a>
 <div class="memitem">
 <div class="memproto">
@@ -202,7 +272,7 @@ Functions</h2></td></tr>
 <p>Adds the specified value to the matrix. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">t</td><td>Pointer to matrix_int </td></tr>
+    <tr><td class="paramname">m</td><td>Pointer to matrix_int </td></tr>
     <tr><td class="paramname">row</td><td></td></tr>
     <tr><td class="paramname">col</td><td></td></tr>
     <tr><td class="paramname">v</td><td>Value to add</td></tr>
@@ -210,6 +280,32 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>current value </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a965bba1afee5109d2f0612056f6a46d3"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a>* sa_create_matrix_flt </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>rows</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>cols</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -246,6 +342,38 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Pointer to matrix_int </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a159de3b431c84bd64aa135210b92c984"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int sa_deserialize_matrix_flt </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>buf</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>len</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -292,6 +420,22 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a class="anchor" id="a61795a9767d0af12db764b2fcaba3c50"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void sa_destroy_matrix_flt </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a class="anchor" id="a14ff864589e5783ec009701a53a812df"></a>
 <div class="memitem">
 <div class="memproto">
@@ -313,6 +457,38 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a class="anchor" id="ac8d4128a9e4814fe8fb4d0f640d2fe0e"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float sa_get_matrix_flt </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>row</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>cols</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -359,6 +535,22 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a class="anchor" id="aeb8474f69db8d9947c1d7ff082b8673b"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void sa_init_matrix_flt </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a class="anchor" id="ad6a00138de0c9c283f0236dd550604b1"></a>
 <div class="memitem">
 <div class="memproto">
@@ -374,12 +566,42 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Zeros out the matrix. </p>
+<ul>
+<li>matrix_int is set to all zeros</li>
+<li>matrix_flt is ste to all NAN</li>
+</ul>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">ts</td><td>Pointer to matrix_int </td></tr>
+    <tr><td class="paramname">m</td><td>Pointer to matrix_int </td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a class="anchor" id="a81122ec074058e123cddc56c5e56f43c"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void sa_init_matrix_row_flt </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>row</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -407,7 +629,11 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Zeros out the specified matric row. </p>
+<p>Zeros out the specified matrix row. </p>
+<ul>
+<li>matrix_int is set to all zeros</li>
+<li>matrix_flt is ste to all NAN</li>
+</ul>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">m</td><td>Pointer to matrix_int </td></tr>
@@ -415,6 +641,32 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a class="anchor" id="a0e38422ba61d75f8b28f6dd32b24d68b"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">char* sa_serialize_matrix_flt </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t *&#160;</td>
+          <td class="paramname"><em>len</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -451,6 +703,44 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>char* Serialized representation MUST be freed by the caller </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="aa217404dd98c06ad54307aebc145ae48"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float sa_set_matrix_flt </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="matrix_8h.html#addc527cff8bce4957bc9c98ca0da064c">sa_matrix_flt</a> *&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>row</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>col</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>v</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>

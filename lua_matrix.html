@@ -98,7 +98,7 @@
                 <a href="./">
             
                     
-                    Streaming Algorithms (0.0.4)
+                    Streaming Algorithms (0.0.5)
             
                 </a>
             
@@ -253,6 +253,19 @@
             
         </li>
     
+        <li class="chapter " data-level="3.1.1.1.2" data-path="lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_volume_monitor.old.html">
+            
+                <a href="lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_volume_monitor.old.html">
+            
+                    
+                    heka_message_volume_monitor.old
+            
+                </a>
+            
+
+            
+        </li>
+    
 
             </ul>
             
@@ -315,7 +328,8 @@
                                 
                                 <h1 id="Lua_Matrix_Module">Lua Matrix Module</h1>
 <h2 id="Overview">1. Overview</h2>
-<p>A matrix data structure object.</p>
+<p>The matrix data structure module is globally registered and returned by the
+Lua require function.</p>
 <h2 id="Module">2. Module</h2>
 <h3 id="Example_Usage">2.1. Example Usage</h3>
 <pre><code class="lang-lua"><span class="hljs-keyword">local</span> matrix = <span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.matrix&quot;</span>
@@ -331,12 +345,11 @@ m:add(<span class="hljs-number">20</span>, <span class="hljs-number">10</span>, 
 <pre><code class="lang-lua"><span class="hljs-built_in">require</span> <span class="hljs-string">&quot;streaming_algorithms.matrix&quot;</span>
 <span class="hljs-keyword">local</span> m = streaming_algorithms.matrix.new(<span class="hljs-number">20</span>, <span class="hljs-number">10</span>)
 </code></pre>
-<p>Import the <em>matrix</em> via the Lua &apos;require&apos; function. The module is globally
-registered and returned by the require function.</p>
 <p><em>Arguments</em></p>
 <ul>
 <li>rows (unsigned) The number of rows in the matrix (must be &gt; 1).</li>
 <li>cols (unsigned) The number of columns in the matrix (must be &gt; 1).</li>
+<li>type (nil/string) int|float (default int)</li>
 </ul>
 <p><em>Return</em></p>
 <ul>
@@ -370,7 +383,8 @@ v = m:add(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>
 </ul>
 <p><em>Return</em></p>
 <ul>
-<li>The value of the cell nil if the request was out of bounds.</li>
+<li>The resulting value at the specified cell or nil if the request was out of
+bounds.</li>
 </ul>
 <h4 id="set">2.3.3. set</h4>
 <pre><code class="lang-lua">v = m:set(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>)
@@ -387,8 +401,7 @@ v = m:set(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>
 </ul>
 <p><em>Return</em></p>
 <ul>
-<li>The resulting value of the row or nil if the time was outside the range
-of the window.</li>
+<li>The value at the specified cell or nil if the request was out of bounds.</li>
 </ul>
 <h4 id="get">2.3.4. get</h4>
 <pre><code class="lang-lua">v = m:get(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>)
@@ -402,7 +415,7 @@ of the window.</li>
 </ul>
 <p><em>Return</em></p>
 <ul>
-<li>The value at the specifed cell or nil if the request was out of bounds.</li>
+<li>The value at the specified cell or nil if the request was out of bounds.</li>
 </ul>
 <h4 id="get_row">2.3.5. get_row</h4>
 <pre><code class="lang-lua">a = m:get_row(<span class="hljs-number">1</span>)
@@ -444,7 +457,38 @@ the matrix.</p>
 <li>pcc (number/nil) Pearson&apos;s correlation coefficient.</li>
 <li>index (int/nil) Row index of the best match.</li>
 </ul>
-<h4 id="fromstring">2.3.8. fromstring</h4>
+<h4 id="merge">2.3.8. merge</h4>
+<pre><code class="lang-lua">m:merge(m1, op)
+</code></pre>
+<p>Merges one matrix into another based on the specified operation.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>m1 (userdata) Source matrix to merge.</li>
+<li>op (string/nil) One of the following entries:<ul>
+<li>add (default) - unlike the float add function NAN is ignored so merge will
+not clobber an initialized value in the destination matrix.</li>
+<li>set</li>
+</ul>
+</li>
+</ul>
+<p><em>Return</em></p>
+<ul>
+<li>none</li>
+</ul>
+<h4 id="sum">2.3.9. sum</h4>
+<pre><code class="lang-lua">sum = m:sum(<span class="hljs-number">10</span>)
+<span class="hljs-comment">-- sum == 23</span>
+</code></pre>
+<p>Returns the sum of the specified matrix row.</p>
+<p><em>Arguments</em></p>
+<ul>
+<li>row (unsigned) Matrix row to compute the sum on (NAN is ignored).</li>
+</ul>
+<p><em>Returns</em></p>
+<ul>
+<li>sum (number)</li>
+</ul>
+<h4 id="fromstring">2.3.10. fromstring</h4>
 <pre><code class="lang-lua">m:fromstring(<span class="hljs-built_in">tostring</span>(m1))
 </code></pre>
 <p>Restores a matrix to the previously serialized state.</p>
@@ -456,7 +500,7 @@ the matrix.</p>
 <ul>
 <li>none or throws an error.</li>
 </ul>
-<div id="anchors-navbar"><i class="fa fa-anchor"></i><ul><p><a href="#Lua_Matrix_Module">Lua Matrix Module</a></p><li><a href="#Overview">1. Overview</a></li><li><a href="#Module">2. Module</a></li><ul><li><a href="#Example_Usage">2.1. Example Usage</a></li><li><a href="#Functions">2.2. Functions</a></li><ul><li><a href="#new">2.2.1. new</a></li></ul><li><a href="#Methods">2.3. Methods</a></li><ul><li><a href="#get_configuration">2.3.1. get_configuration</a></li><li><a href="#add">2.3.2. add</a></li><li><a href="#set">2.3.3. set</a></li><li><a href="#get">2.3.4. get</a></li><li><a href="#get_row">2.3.5. get_row</a></li><li><a href="#clear_row">2.3.6. clear_row</a></li><li><a href="#pcc">2.3.7. pcc</a></li><li><a href="#fromstring">2.3.8. fromstring</a></li></ul></ul></ul></div><a href="#Overview" id="goTop"><i class="fa fa-arrow-up"></i></a>
+<div id="anchors-navbar"><i class="fa fa-anchor"></i><ul><p><a href="#Lua_Matrix_Module">Lua Matrix Module</a></p><li><a href="#Overview">1. Overview</a></li><li><a href="#Module">2. Module</a></li><ul><li><a href="#Example_Usage">2.1. Example Usage</a></li><li><a href="#Functions">2.2. Functions</a></li><ul><li><a href="#new">2.2.1. new</a></li></ul><li><a href="#Methods">2.3. Methods</a></li><ul><li><a href="#get_configuration">2.3.1. get_configuration</a></li><li><a href="#add">2.3.2. add</a></li><li><a href="#set">2.3.3. set</a></li><li><a href="#get">2.3.4. get</a></li><li><a href="#get_row">2.3.5. get_row</a></li><li><a href="#clear_row">2.3.6. clear_row</a></li><li><a href="#pcc">2.3.7. pcc</a></li><li><a href="#merge">2.3.8. merge</a></li><li><a href="#sum">2.3.9. sum</a></li><li><a href="#fromstring">2.3.10. fromstring</a></li></ul></ul></ul></div><a href="#Overview" id="goTop"><i class="fa fa-arrow-up"></i></a>
                                 
                                 </section>
                             
@@ -499,7 +543,7 @@ the matrix.</p>
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"Matrix","level":"2.2","depth":1,"next":{"title":"Piecewise Parabolic Prediction (P2)","level":"2.3","depth":1,"path":"lua_p2.md","ref":"lua_p2.md","articles":[]},"previous":{"title":"Count-min Sketch","level":"2.1","depth":1,"path":"lua_cm_sketch.md","ref":"lua_cm_sketch.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"lua_matrix.md","mtime":"2018-07-17T14:48:02.367Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-07-17T16:45:36.043Z"},"basePath":".","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"Matrix","level":"2.2","depth":1,"next":{"title":"Piecewise Parabolic Prediction (P2)","level":"2.3","depth":1,"path":"lua_p2.md","ref":"lua_p2.md","articles":[]},"previous":{"title":"Count-min Sketch","level":"2.1","depth":1,"path":"lua_cm_sketch.md","ref":"lua_cm_sketch.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"lua_matrix.md","mtime":"2018-10-12T16:04:03.952Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-11-14T15:10:00.565Z"},"basePath":".","book":{"language":""}});
         });
     </script>
 </div>

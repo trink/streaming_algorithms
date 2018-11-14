@@ -61,6 +61,8 @@
     <link rel="shortcut icon" href="../../../../../gitbook/images/favicon.ico" type="image/x-icon">
 
     
+    <link rel="next" href="heka_message_volume_monitor.old.html" />
+    
     
     <link rel="prev" href="./" />
     
@@ -96,7 +98,7 @@
                 <a href="../../../../../">
             
                     
-                    Streaming Algorithms (0.0.4)
+                    Streaming Algorithms (0.0.5)
             
                 </a>
             
@@ -251,6 +253,19 @@
             
         </li>
     
+        <li class="chapter " data-level="3.1.1.1.2" data-path="heka_message_volume_monitor.old.html">
+            
+                <a href="heka_message_volume_monitor.old.html">
+            
+                    
+                    heka_message_volume_monitor.old
+            
+                </a>
+            
+
+            
+        </li>
+    
 
             </ul>
             
@@ -316,42 +331,42 @@
 This schema is used for automated monitoring of all message attributes for any
 change in behavior.</p>
 <h2 id="Sample_Configuration">1. Sample Configuration</h2>
-<pre><code class="lang-lua">filename = <span class="hljs-string">&quot;heka_message_monitor.lua&quot;</span>
+<p>The defaults are commented out.</p>
+<pre><code class="lang-lua">filename        = <span class="hljs-string">&quot;heka_message_monitor.lua&quot;</span>
 ticker_interval = <span class="hljs-number">360</span>
-preserve_data = <span class="hljs-keyword">true</span>
+preserve_data   = <span class="hljs-keyword">true</span>
 message_matcher = <span class="hljs-string">&quot;Uuid &lt; &apos;\003&apos;&quot;</span> <span class="hljs-comment">-- slightly greater than a 1% sample</span>
+timer_event_inject_limit = <span class="hljs-number">1000</span>
 
-hierarchy = {<span class="hljs-string">&quot;Logger&quot;</span>, <span class="hljs-string">&quot;Type&quot;</span>, <span class="hljs-string">&quot;EnvVersion&quot;</span>} <span class="hljs-comment">-- default</span>
-max_set_size = <span class="hljs-number">255</span> <span class="hljs-comment">-- default</span>
-time_series_length = <span class="hljs-number">240</span> * <span class="hljs-number">9</span> + <span class="hljs-number">1</span> <span class="hljs-comment">-- default (9 days plus the active aggregation window)</span>
-time_series_resolution = <span class="hljs-number">360</span> <span class="hljs-comment">-- seconds default (6 minutes)</span>
-time_series_sample_length = <span class="hljs-number">10</span> <span class="hljs-comment">-- default used to determine if a attribute has non sparse data</span>
-
-mp_window = <span class="hljs-number">240</span> <span class="hljs-comment">-- default (1 day)</span>
-mp_percent_data = <span class="hljs-number">10</span> <span class="hljs-comment">-- default (used for an estimate, if an alert would be trigger the exact value is verified)</span>
-
-exclude = <span class="hljs-keyword">nil</span> <span class="hljs-comment">-- default table of field names to exclude from monitoring/analyis e.g. `{&quot;Pid&quot;, &quot;Fields[Date]&quot;}`</span>
+<span class="hljs-comment">-- hierarchy           = {&quot;Logger&quot;}</span>
+<span class="hljs-comment">-- max_set_size        = 255</span>
+<span class="hljs-comment">-- samples             = 25</span>
+<span class="hljs-comment">-- sample_interval     = 3600</span>
+<span class="hljs-comment">-- histogram_buckets   = 25</span>
+<span class="hljs-comment">-- exclude             = nil -- table of field names to exclude from monitoring/analyis</span>
+                             <span class="hljs-comment">-- e.g. `{&quot;Pid&quot;, &quot;Fields[Date]&quot;}` hierarchy will always be appended</span>
+<span class="hljs-comment">-- preservation_version = 1  -- increase when altering any of the above configuration values</span>
 
 alert = {
-  disabled = <span class="hljs-keyword">false</span>,
-  prefix = <span class="hljs-keyword">true</span>,
-  throttle = <span class="hljs-number">90</span>,
-  modules = {
-    email = {recipients = {<span class="hljs-string">&quot;trink@mozilla.com&quot;</span>}},
+<span class="hljs-comment">--  disabled  = false,</span>
+  prefix    = <span class="hljs-keyword">true</span>,
+<span class="hljs-comment">--  throttle  = 90,</span>
+  modules   = {
+    email = {recipients = {<span class="hljs-string">&quot;example@example.com&quot;</span>}},
   },
   thresholds = {
-    mp_percent = <span class="hljs-number">50</span>, <span class="hljs-comment">-- default percentage of matrix profile range the top 5% of discords must cover before alerting (max - median)</span>
-    mp_mindist = <span class="hljs-number">10</span>, <span class="hljs-comment">-- default minimum distance change before alerting (max - median)</span>
-    mp_suppress = <span class="hljs-keyword">false</span>, <span class="hljs-comment">-- suppress alerts until the matrix profile has been active for time_series_length</span>
+    <span class="hljs-comment">-- pcc              = 0.3,  -- minimum correlation coefficient (less than or equal alerts)</span>
+    <span class="hljs-comment">-- submissions      = 1000, -- minimum number of submissions before alerting in at least the current and two previous interval (pcc)</span>
+    <span class="hljs-comment">-- duplicate_change = nil, -- +/- percentage of the duplicate range i.e. 50% of a 10-12% range is +/- 1% so anything outside of 9-13% will alert allowing the range to creep and self adjust; warning this limits it to only detecting large jumps. The minimum number of submissions before alerting is 50K due to the HLL estimation error.  The alert is based on the last full hour, not the current hour, as the estimate takes a while to stabilize for some fields.</span>
   }
 }
 </code></pre>
 <h2 id="Analysis_Behavior_(based_on_subtype)">2. Analysis Behavior (based on subtype)</h2>
 <ul>
 <li><code>unknown</code> - no analysis</li>
-<li><code>unique</code>  - min/max lengths</li>
-<li><code>range</code>   - min/max values</li>
-<li><code>set</code>     - matrix profile analysis for frequency of each item</li>
+<li><code>unique</code>  - hyperloglog percent duplicate calculation (per interval)</li>
+<li><code>range</code>   - histogram analysis of the range</li>
+<li><code>set</code>     - histogram analysis of the enumerated set</li>
 <li><code>sparse</code>  - weights of each of the most frequent items are computed</li>
 </ul>
 <p>source code: <a href="https://github.com/mozilla-services/lua_sandbox_extensions/blob/master/lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.lua" target="_blank">heka_message_monitor.lua</a></p>
@@ -382,10 +397,14 @@ alert = {
 
             
                 
-                <a href="./" class="navigation navigation-prev navigation-unique" aria-label="Previous page: analysis">
+                <a href="./" class="navigation navigation-prev " aria-label="Previous page: analysis">
                     <i class="fa fa-angle-left"></i>
                 </a>
                 
+                
+                <a href="heka_message_volume_monitor.old.html" class="navigation navigation-next " aria-label="Next page: heka_message_volume_monitor.old">
+                    <i class="fa fa-angle-right"></i>
+                </a>
                 
             
         
@@ -394,7 +413,7 @@ alert = {
     <script>
         var gitbook = gitbook || [];
         gitbook.push(function() {
-            gitbook.page.hasChanged({"page":{"title":"heka_message_monitor","level":"3.1.1.1.1","depth":4,"previous":{"title":"analysis","level":"3.1.1.1","depth":3,"path":"lua_binding/luasandbox/sandboxes/heka/analysis/README.md","ref":"lua_binding/luasandbox/sandboxes/heka/analysis/README.md","articles":[{"title":"heka_message_monitor","level":"3.1.1.1.1","depth":4,"path":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.md","ref":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.md","mtime":"2018-07-17T16:45:24.245Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-07-17T16:45:36.043Z"},"basePath":"../../../../..","book":{"language":""}});
+            gitbook.page.hasChanged({"page":{"title":"heka_message_monitor","level":"3.1.1.1.1","depth":4,"next":{"title":"heka_message_volume_monitor.old","level":"3.1.1.1.2","depth":4,"path":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_volume_monitor.old.md","ref":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_volume_monitor.old.md","articles":[]},"previous":{"title":"analysis","level":"3.1.1.1","depth":3,"path":"lua_binding/luasandbox/sandboxes/heka/analysis/README.md","ref":"lua_binding/luasandbox/sandboxes/heka/analysis/README.md","articles":[{"title":"heka_message_monitor","level":"3.1.1.1.1","depth":4,"path":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.md","ref":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.md","articles":[]},{"title":"heka_message_volume_monitor.old","level":"3.1.1.1.2","depth":4,"path":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_volume_monitor.old.md","ref":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_volume_monitor.old.md","articles":[]}]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":["navigator"],"pluginsConfig":{"navigator":{},"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"sharing":{"facebook":true,"twitter":true,"google":false,"weibo":false,"instapaper":false,"vk":false,"all":["facebook","google","twitter","weibo","instapaper"]},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56}},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"lua_binding/luasandbox/sandboxes/heka/analysis/heka_message_monitor.md","mtime":"2018-11-14T15:09:54.949Z","type":"markdown"},"gitbook":{"version":"3.2.2","time":"2018-11-14T15:10:00.565Z"},"basePath":"../../../../..","book":{"language":""}});
         });
     </script>
 </div>
