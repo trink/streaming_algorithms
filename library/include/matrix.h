@@ -37,7 +37,7 @@ sa_matrix_flt* sa_create_matrix_flt(int rows, int cols);
  * - matrix_int is set to all zeros
  * - matrix_flt is ste to all NAN
  *
- * @param ts Pointer to matrix_int
+ * @param m Pointer to matrix_int
  */
 void sa_init_matrix_int(sa_matrix_int *m);
 void sa_init_matrix_flt(sa_matrix_flt *m);
@@ -57,7 +57,7 @@ void sa_init_matrix_row_flt(sa_matrix_flt *m, int row);
 /**
  * Adds the specified value to the matrix.
  *
- * @param t Pointer to matrix_int
+ * @param m Pointer to matrix_int
  * @param row
  * @param col
  * @param v Value to add
