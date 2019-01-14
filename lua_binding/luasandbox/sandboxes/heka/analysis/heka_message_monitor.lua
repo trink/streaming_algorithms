@@ -307,12 +307,11 @@ local function output_subtype(key, v, stats)
                 for i=1, samples do
                     if i ~= v.cint and v.data:sum(i) >= alert_submissions then
                         active = active + 1
-                        break
                     end
                 end
                 if active > alert_samples
                 and v.updated - v.created >= alert_active
-                and v.updated % sample_intervals / sample_intervals > 0.25 then
+                and v.updated % sample_interval / sample_interval > 0.25 then
                     v.alerted = v.alerted + 1
                     debug_alert(v, pcc, closest, escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), stats.alerts)
                 end
@@ -347,12 +346,11 @@ local function output_subtype(key, v, stats)
                 for i=1, samples do
                     if i ~= v.cint and v.counts:get(i, 1) >= alert_submissions then
                         active = active + 1
-                        break
                     end
                 end
                 if active > alert_samples
                 and v.updated - v.created >= alert_active
-                and v.updated % sample_intervals / sample_intervals > 0.25 then
+                and v.updated % sample_interval / sample_interval > 0.25 then
                     v.alerted = v.alerted + 1
                     debug_alert_range(v, pcc, closest, escape_html(string.format("%s->%s", table.concat(stats.path, "->"), tostring(key))), stats.alerts)
                 end
