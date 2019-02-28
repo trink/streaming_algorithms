@@ -67,7 +67,7 @@ Adds a value to the specified row in the time series.
 - value (number) The value to be added to the specified row/column.
 
 *Return*
-- The value of the updated row or nil if the time was outside the range
+- The value of the updated row or nil if the time is before the start range
   of the window.
 
 #### set
@@ -86,7 +86,7 @@ Overwrites the value at a specific row in the time series.
 - value (number) The value to be overwritten at the specified row.
 
 *Return*
-- The resulting value of the row or nil if the time was outside the range
+- The resulting value of the row or nil if the time is before the range
   of the window.
 
 #### merge
@@ -120,7 +120,7 @@ Fetches the value at a specific row in the time series.
   is used to determine which row is being operated on.
 
 *Return*
-- The value at the specifed row or nil if the time was outside the range
+- The value at the specifed row or nil if the time is outside the range
   of the window.
 
 #### get_range
